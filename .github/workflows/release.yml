@@ -59,8 +59,8 @@ jobs:
         with:
           projectPath: crates/pk-gui
           tagName: ${{ github.ref_name }}
-          releaseName: "端口终结者 v__VERSION__"
-          releaseBody: "下载对应平台安装包；命令行工具 pk 见 pk-v* 压缩包。"
+          releaseName: "pocket v__VERSION__"
+          releaseBody: "下载对应平台安装包；命令行见 pocket-v* 压缩包，解压后是 pk / pk.exe。"
           # 草稿模式：构建完成确认无误后手动发布
           releaseDraft: true
           args: ${{ matrix.args }}
@@ -70,19 +70,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cargo build --release -p pk ${{ matrix.args }}
+          cargo build --release -p pocket ${{ matrix.args }}
           TAG="${GITHUB_REF_NAME}"
           case "${{ matrix.platform }}" in
             macos-latest)
-              ART="pk-${TAG}-universal-apple-darwin.tar.gz"
+              ART="pocket-${TAG}-universal-apple-darwin.tar.gz"
               tar -czf "$ART" -C target/universal-apple-darwin/release pk
               ;;
             windows-latest)
-              ART="pk-${TAG}-x86_64-pc-windows-msvc.zip"
+              ART="pocket-${TAG}-x86_64-pc-windows-msvc.zip"
               tar -a -cf "$ART" -C target/release pk.exe
               ;;
             *)
-              ART="pk-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+              ART="pocket-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
               tar -czf "$ART" -C target/release pk
               ;;
           esac

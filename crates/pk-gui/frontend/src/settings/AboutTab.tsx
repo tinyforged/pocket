@@ -16,7 +16,7 @@ export default function AboutTab() {
         <Label className="text-xs text-muted-foreground">版本</Label>
         <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-2 rounded-[10px] border border-border px-3 py-2.5 text-xs">
           <dt className="text-muted-foreground">应用</dt>
-          <dd className="font-mono">端口终结者 · pk v{version}</dd>
+          <dd className="font-mono">pocket · pk v{version}</dd>
           <dt className="text-muted-foreground">标识</dt>
           <dd className="font-mono">dev.tinyforged.pocket</dd>
           <dt className="text-muted-foreground">CLI</dt>

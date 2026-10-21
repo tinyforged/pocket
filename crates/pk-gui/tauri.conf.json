@@ -1,8 +1,9 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "端口终结者",
+  "productName": "Pocket",
   "version": "0.1.0",
   "identifier": "dev.tinyforged.pocket",
+  "mainBinaryName": "pocket",
   "build": {
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "pnpm dev",
@@ -13,7 +14,7 @@
     "withGlobalTauri": false,
     "windows": [
       {
-        "title": "端口终结者 · pk",
+        "title": "Pocket",
         "width": 1080,
         "height": 720,
         "minWidth": 860,

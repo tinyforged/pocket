@@ -25,7 +25,7 @@ pub fn install(app: &mut tauri::App) -> Result<(), Box<dyn std::error::Error>> {
                 .cloned()
                 .ok_or("缺少应用图标（检查 bundle.icon）")?,
         )
-        .tooltip("端口终结者 · pk")
+        .tooltip("pocket · pk")
         .menu(&menu)
         // 左键点图标 = 显示窗口，菜单只在右键弹出
         .show_menu_on_left_click(false)
