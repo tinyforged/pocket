@@ -5,10 +5,17 @@
  */
 export const ACCENTS = {
   ocean: { label: "海洋蓝", light: "#3d6fe0", dark: "#5b8cff" },
-  violet: { label: "星紫", light: "#7c5ce0", dark: "#a78bfa" },
+  indigo: { label: "靛蓝", light: "#4f46e5", dark: "#818cf8" },
+  cyan: { label: "青碧", light: "#0891b2", dark: "#22d3ee" },
+  teal: { label: "沧青", light: "#0d9488", dark: "#2dd4bf" },
   emerald: { label: "翡翠绿", light: "#0f9d5b", dark: "#34d399" },
-  rose: { label: "玫瑰红", light: "#e0446c", dark: "#fb7185" },
   amber: { label: "琥珀橙", light: "#d97706", dark: "#fbbf24" },
+  orange: { label: "落日橙", light: "#ea580c", dark: "#fb923c" },
+  ruby: { label: "绯红", light: "#dc2626", dark: "#f87171" },
+  rose: { label: "玫瑰红", light: "#e0446c", dark: "#fb7185" },
+  pink: { label: "桃粉", light: "#db2777", dark: "#f472b6" },
+  violet: { label: "星紫", light: "#7c5ce0", dark: "#a78bfa" },
+  slate: { label: "石墨灰", light: "#475569", dark: "#94a3b8" },
 } as const;
 
 export type AccentKey = keyof typeof ACCENTS;

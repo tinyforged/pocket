@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 import { ACCENTS, ACCENT_KEYS } from "../appearance/accents";
 
-/** 主题色：内置 5 套，双圆点展示亮 / 暗两档。 */
+/** 主题色：内置 12 套，双圆点展示亮 / 暗两档。 */
 export default function AccentSection() {
   const { settings, update } = useSettings();
 
