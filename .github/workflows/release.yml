@@ -10,7 +10,12 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-22.04
+    # ubuntu 全量检查；windows 补平台差异（cfg 相关警告在 mac 上看不见）
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-22.04, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +26,7 @@ jobs:
 
       # pk-gui 依赖 GTK / WebKit（Tauri），编译期需要开发库
       - name: 安装 Linux GUI 依赖
+        if: matrix.os == 'ubuntu-22.04'
         run: |
           sudo apt-get update
           sudo apt-get install -y \
@@ -31,16 +37,20 @@ jobs:
       - run: cargo clippy --workspace --all-targets -- -D warnings
       - run: cargo test --workspace
 
+      # 前端与平台无关，ubuntu 侧查一次即可
       - uses: pnpm/action-setup@v4
+        if: matrix.os == 'ubuntu-22.04'
         with:
           version: 11
       - uses: actions/setup-node@v4
+        if: matrix.os == 'ubuntu-22.04'
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: crates/pk-gui/frontend/pnpm-lock.yaml
 
       - name: 前端类型检查与构建
+        if: matrix.os == 'ubuntu-22.04'
         working-directory: crates/pk-gui/frontend
         run: |
           pnpm install --frozen-lockfile
@@ -74,8 +84,10 @@ jobs:
           cache-dependency-path: crates/pk-gui/frontend/pnpm-lock.yaml
 
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+      # universal 打包需要双架构 target；显式 rustup 安装，避免依赖 action 入参行为
+      - name: 安装 macOS 双架构 target
+        if: matrix.platform == 'macos-latest'
+        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
 
       - name: 安装 Linux 打包依赖

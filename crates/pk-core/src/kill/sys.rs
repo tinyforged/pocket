@@ -3,7 +3,10 @@
 //! unix：SIGTERM → 轮询等待（宽限 3 秒）→ SIGKILL；
 //! Windows：TerminateProcess 一步到位（没有可用的优雅信号）。
 
+// 优雅退出流程（SIGTERM + 轮询）仅 unix 存在；Windows 走 TerminateProcess
+#[cfg(not(target_os = "windows"))]
 use std::thread::sleep;
+#[cfg(not(target_os = "windows"))]
 use std::time::{Duration, Instant};
 
 use sysinfo::{ProcessStatus, ProcessesToUpdate, System};
@@ -12,8 +15,10 @@ use super::{KillError, KillOutcome, ProcessKiller};
 use crate::model::KillTarget;
 
 /// SIGTERM 后留给进程的体面退出时间。
+#[cfg(not(target_os = "windows"))]
 const GRACE: Duration = Duration::from_secs(3);
 /// 轮询间隔。
+#[cfg(not(target_os = "windows"))]
 const POLL: Duration = Duration::from_millis(100);
 
 pub struct Killer;
