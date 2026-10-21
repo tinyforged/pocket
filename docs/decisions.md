@@ -33,3 +33,42 @@
   positional 实现。TUI / GUI 等 core 稳定、CLI 天天在用之后再立项。
 - 后果：未来加 `pk disk` / `pk proc` 不会和裸端口形式冲突；GUI 需求出现时 core 无需
   改动。命令解析行为有单元测试锁定（见 `pk-cli` tests）。
+
+## ADR-004：扫描与终止的跨平台实现选型 netstat2 + sysinfo
+
+- 状态：已接受（2026-10-21）
+- 背景：端口→PID 映射与进程详情需要三平台一致的行为。自写三套平台代码
+  （Linux `/proc`、macOS libproc、Windows IP Helper）成本高且每个平台都是
+  一次试错；骨架阶段预留了按平台的空实现文件。
+- 决策：采用 netstat2（套接字与 PID 归属）+ sysinfo（进程详情、终止信号）
+  组合，删掉按平台文件，收敛为 `scan/sys.rs` / `kill/sys.rs` 单实现。
+  ADR-002 的 `cfg(target_os)` 规则不变——将来某平台确需特化时再拆分支。
+  终止策略"先礼后兵"：unix 先 SIGTERM、宽限 3 秒、超时 SIGKILL；
+  Windows 无优雅信号，直接 TerminateProcess。
+- 后果：
+  - core 依赖面变大（两个系统级 crate）；
+  - 非提权时他人/root 进程可能拿不到 PID（macOS libproc、Linux `/proc`
+    均受属主限制），呈现为"无法获取进程（可能需要提权）"而非报错；
+  - netstat2 会返回 port 0 与同进程重复条目，已在 core 过滤 / 去重
+    （去重键含 pid：SO_REUSEPORT 多进程共享端口是真实占用，不能折叠）；
+  - sysinfo 0.39 的 MSRV 为 1.95，高于 workspace 声明的 1.85；工具链已锁
+    1.95，CI 同版本，声明值暂不动。
+
+## ADR-005：终止的谨慎默认（多进程确认、受保护名单、PID 复用校验）
+
+- 状态：已接受（2026-10-21）
+- 背景：开发当天实测就踩了雷：`pk port kill 18080` 时端口上除了测试进程
+  还有一个无关的 `go run` 网关，无确认的批量杀把它一并终止。多进程端口的
+  "一键全杀"代价不可控；误杀数据库 / Docker 后端更是灾难级。
+- 决策（CLI 层策略，core 只提供分级）：
+  - 单进程 = 一键直杀（产品核心体验）；多进程 = 列出清单 + `[y/N]` 总确认，
+    `--yes` 供脚本跳过；
+  - `RiskLevel::Critical`（系统核心 / 数据库 / Docker 等，见
+    `model.rs` 受保护名单）默认拒绝终止，需 `--force`；`Caution`
+  （root / 系统账户属主）打警告但放行；
+  - 杀前以启动时间校验 PID 未被复用（`KillTarget::expect_start_time`），
+    校验失败直接中止；
+  - 杀完输出等效手动命令（`kill -9 …` / `taskkill /F /PID …`），
+    把操作权还给终端。
+- 后果：交互多一步，但与误杀代价相比可忽略；TUI / GUI 出现时沿用同一
+  `RiskLevel` 分级，策略只写一次。
