@@ -1,0 +1,13 @@
+[package]
+name = "pk-core"
+description = "pocket 工具箱核心逻辑：扫描与进程终止，无 UI 依赖"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[lints]
+workspace = true

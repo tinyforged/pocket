@@ -1,0 +1,19 @@
+[package]
+name = "pk-cli"
+description = "pk：pocket 工具箱命令行入口"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "pk"
+path = "src/main.rs"
+
+[dependencies]
+pk-core.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+
+[lints]
+workspace = true
