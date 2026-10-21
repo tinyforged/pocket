@@ -1,4 +1,4 @@
-//! pk-gui：端口终结者的 GUI 前端（Tauri 2 + Vite/React）。
+//! pk-gui：让开！的 GUI 前端（Tauri 2 + Vite/React）。
 //!
 //! 模块按领域划分，main.rs 只做组装（Builder、托盘安装、事件接线、
 //! 命令注册），不实现任何功能：
