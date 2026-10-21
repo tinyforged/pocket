@@ -6,6 +6,7 @@ import {
   Search,
   Settings,
   Sun,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -17,6 +18,9 @@ import { useTheme, type ThemePreference } from "@/providers/theme";
 interface TopBarProps {
   keyword: string;
   onKeyword: (value: string) => void;
+  /** 过滤后的条数（有关键字时显示"匹配/总数"） */
+  matchCount: number;
+  totalCount: number;
   onRefresh: () => void;
   refreshing: boolean;
   onOpenSettings: () => void;
@@ -36,6 +40,8 @@ const THEME_META: Record<
 export default function TopBar({
   keyword,
   onKeyword,
+  matchCount,
+  totalCount,
   onRefresh,
   refreshing,
   onOpenSettings,
@@ -67,14 +73,38 @@ export default function TopBar({
 
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2 rounded-[10px] border border-border bg-muted/50 px-3 py-1.5 transition-colors focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px] focus-within:shadow-primary/15">
-          <Search className="size-3.5 text-muted-foreground" />
+          <Search className="size-3.5 shrink-0 text-muted-foreground" />
           <input
             data-search
             value={keyword}
             onChange={(e) => onKeyword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && keyword) {
+                onKeyword("");
+                e.currentTarget.blur();
+              }
+            }}
             placeholder="端口 / 进程名 / 用户，按 / 聚焦"
-            className="w-56 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
+            className="w-52 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
           />
+          {keyword && (
+            <>
+              <span
+                className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
+                title="匹配条数 / 总条数"
+              >
+                {matchCount}/{totalCount}
+              </span>
+              <button
+                type="button"
+                onClick={() => onKeyword("")}
+                title="清空搜索（Esc）"
+                className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <X className="size-3.5" />
+              </button>
+            </>
+          )}
         </div>
 
         <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
@@ -84,9 +114,12 @@ export default function TopBar({
           />
           <button
             onClick={onOpenSettings}
-            className="rounded px-1 py-0.5 font-mono hover:bg-muted hover:text-foreground"
+            className="flex items-center gap-1.5 rounded px-1 py-0.5 font-mono hover:bg-muted hover:text-foreground"
             title="在设置中调整刷新频率"
           >
+            {settings.autoRefresh && (
+              <span className="size-1.5 animate-pulse rounded-full bg-ok" />
+            )}
             {settings.intervalMs / 1000}s
           </button>
         </label>

@@ -1,3 +1,4 @@
+import { Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Toaster } from "sonner";
 
@@ -11,7 +12,9 @@ import RelaunchDialog from "@/elevation/RelaunchDialog";
 import { useElevation } from "@/elevation/useElevation";
 import KillDialog from "@/ports/KillDialog";
 import { useKill } from "@/ports/kill";
+import ListSkeleton from "@/ports/ListSkeleton";
 import PortTable from "@/ports/PortTable";
+import ScanTime from "@/ports/ScanTime";
 import { filterEntries, summarize, usePortScan } from "@/ports/scan";
 import { useTheme } from "@/providers/theme";
 
@@ -26,7 +29,7 @@ export default function App() {
   const [elevConfirmOpen, setElevConfirmOpen] = useState(false);
 
   const { resolved } = useTheme();
-  const { entries, refreshing, refresh } = usePortScan();
+  const { entries, refreshing, refresh, loaded, lastScanAt } = usePortScan();
   const kill = useKill(refresh);
   const elevated = useElevation();
   const { bgUrl, reloadBg } = useAppearanceSync();
@@ -68,6 +71,8 @@ export default function App() {
       <TopBar
         keyword={keyword}
         onKeyword={setKeyword}
+        matchCount={visibleEntries.length}
+        totalCount={entries.length}
         onRefresh={() => void refresh()}
         refreshing={refreshing}
         onOpenSettings={() => setSettingsOpen(true)}
@@ -89,7 +94,9 @@ export default function App() {
               : ""
           }
         >
-          {visibleEntries.length > 0 ? (
+          {!loaded ? (
+            <ListSkeleton />
+          ) : visibleEntries.length > 0 ? (
             <PortTable
               entries={visibleEntries}
               expanded={expanded}
@@ -100,9 +107,11 @@ export default function App() {
             />
           ) : (
             <div className="grid place-items-center py-24 text-muted-foreground">
-              <div className="text-5xl">🎉</div>
+              <div className="text-5xl">{keyword ? "🔍" : "🎉"}</div>
               <p className="mt-3 text-sm">
-                {keyword ? "没有匹配的端口占用" : "当前没有端口被占用"}
+                {keyword
+                  ? "没有匹配的端口占用（Esc 清空搜索）"
+                  : "当前没有端口被占用"}
               </p>
             </div>
           )}
@@ -114,6 +123,8 @@ export default function App() {
           {stats.total} 条占用 · {stats.pids} 个进程
           {stats.critical > 0 && ` · 受保护 ${stats.critical}`}
           {elevated && <Badge variant="warn">管理员模式</Badge>}
+          {refreshing && <Loader className="size-3 animate-spin" />}
+          <ScanTime at={lastScanAt} />
         </span>
         <span>终止顺序：SIGTERM → 3s 宽限 → SIGKILL</span>
       </footer>

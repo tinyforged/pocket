@@ -13,11 +13,17 @@ export function usePortScan() {
   const { settings } = useSettings();
   const [entries, setEntries] = useState<PortEntryDto[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  /** 首次扫描是否完成（区分"加载中"与"真的无占用"） */
+  const [loaded, setLoaded] = useState(false);
+  /** 最近一次成功扫描的时间戳（页脚相对时间用） */
+  const [lastScanAt, setLastScanAt] = useState<number | null>(null);
 
   const refresh = useCallback(async () => {
     setRefreshing(true);
     try {
       setEntries(await scanPorts());
+      setLoaded(true);
+      setLastScanAt(Date.now());
     } catch (e) {
       toast.error(`扫描失败：${e}`);
     } finally {
@@ -35,7 +41,7 @@ export function usePortScan() {
     return () => clearInterval(timer);
   }, [settings.autoRefresh, settings.intervalMs, refresh]);
 
-  return { entries, refreshing, refresh };
+  return { entries, refreshing, refresh, loaded, lastScanAt };
 }
 
 /** 按关键字过滤：端口号 / 进程名 / 用户。 */

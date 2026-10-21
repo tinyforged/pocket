@@ -1,4 +1,5 @@
 import { Copy } from "lucide-react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { PortEntryDto } from "@/api/types";
@@ -43,6 +44,7 @@ export default function PortDetail({ entry: e }: { entry: PortEntryDto }) {
         className="mt-1 font-mono"
         onClick={() => {
           void navigator.clipboard.writeText(`kill -9 ${p.pid}`);
+          toast.success(`已复制：kill -9 ${p.pid}`);
         }}
       >
         <Copy /> 复制 kill -9 {p.pid}
