@@ -89,9 +89,13 @@ fn first_pid(pids: &[u32]) -> Option<u32> {
 
 /// 用 sysinfo 一次性补全所有相关 PID 的进程详情。
 fn load_processes(raw: &[RawEntry]) -> HashMap<u32, ProcessInfo> {
+    // pid 必须去重：同一进程常开多个套接字（如 mDNS 的 5353），重复喂给
+    // refresh_processes 会让该进程查不到（A/B 实测，见 examples/probe.rs）
+    let mut seen = std::collections::HashSet::new();
     let pids: Vec<sysinfo::Pid> = raw
         .iter()
         .filter_map(|r| r.pid)
+        .filter(|pid| seen.insert(*pid))
         .map(sysinfo::Pid::from_u32)
         .collect();
     let mut processes = HashMap::new();
