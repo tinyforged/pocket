@@ -21,6 +21,12 @@
   padding: 0;
 }
 
+/* hidden 属性会被后面的 display 声明覆盖（如 .modal-mask 的 grid），
+   这是"启动即弹窗"的根因，全局兜底 */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   height: 100%;
