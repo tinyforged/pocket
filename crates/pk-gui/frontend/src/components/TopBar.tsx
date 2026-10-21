@@ -65,15 +65,16 @@ export default function TopBar({
   const ThemeIcon = THEME_META[preference].icon;
 
   return (
-    <header className="flex items-center justify-between gap-4 border-b border-border bg-card/40 px-5 py-3.5 backdrop-blur-xl">
+    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border/80 bg-card/80 px-5 py-3 backdrop-blur-2xl">
       <div className="flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-xl border border-primary/35 bg-linear-to-br from-primary/30 to-primary/5 shadow-[0_0_24px_var(--glow-1)]">
+        <div className="relative grid size-10 place-items-center overflow-hidden rounded-xl border border-primary/30 bg-linear-to-br from-primary/20 via-primary/8 to-transparent shadow-[0_0_24px_var(--glow-1)]">
+          <span className="absolute -right-2 -top-2 size-6 rounded-full bg-primary/20 blur-md" />
           <Zap className="size-5 text-primary" strokeWidth={2.2} />
         </div>
         <div>
           <h1 className="text-[17px] font-bold tracking-wide">端口终结者</h1>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            pk · 谁占了端口，一眼看清，一键送走
+          <p className="mt-0.5 text-[11px] tracking-wide text-muted-foreground">
+            PORT PROCESS MANAGER
           </p>
         </div>
       </div>
@@ -138,7 +139,7 @@ export default function TopBar({
           </div>
         )}
 
-        <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
+        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/70">
           <Switch
             checked={settings.autoRefresh}
             onCheckedChange={(v) => update({ autoRefresh: v })}

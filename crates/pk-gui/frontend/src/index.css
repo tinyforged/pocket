@@ -5,14 +5,14 @@
 
 /* ---------- 主题令牌：亮 ---------- */
 :root {
-  --background: #f6f7fa;
-  --foreground: #1c2333;
+  --background: #f3f5f9;
+  --foreground: #182235;
   --card: #ffffff;
-  --card-foreground: #1c2333;
-  --muted: #eceef4;
-  --muted-foreground: #6b7288;
-  --border: #e1e4ee;
-  --primary: #3d6fe0;
+  --card-foreground: #182235;
+  --muted: #e9edf4;
+  --muted-foreground: #68758b;
+  --border: #dce2ec;
+  --primary: #3569dc;
   --primary-foreground: #ffffff;
   --danger: #e03e36;
   --warn: #b97a10;
@@ -26,12 +26,12 @@
 
 /* ---------- 主题令牌：暗 ---------- */
 .dark {
-  --background: #0b0d12;
-  --foreground: #e8eaf0;
-  --card: #141824;
-  --card-foreground: #e8eaf0;
-  --muted: #1c2130;
-  --muted-foreground: #8b93a7;
+  --background: #0c111b;
+  --foreground: #e8eef8;
+  --card: #131b29;
+  --card-foreground: #e8eef8;
+  --muted: #1b2637;
+  --muted-foreground: #8f9db2;
   --border: rgba(255, 255, 255, 0.09);
   --primary: #5b8cff;
   --primary-foreground: #ffffff;
@@ -84,6 +84,17 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+button,
+input {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 78%, white);
+  outline-offset: 2px;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--primary) 24%, transparent);
 }
@@ -99,4 +110,15 @@ body {
 }
 *::-webkit-scrollbar-track {
   background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -82,23 +82,34 @@ export default function QueryLanding({
   return (
     <div
       className={cn(
-        "mx-auto w-full max-w-2xl animate-in fade-in slide-in-from-bottom-4 duration-500",
+        "mx-auto w-full max-w-6xl animate-in fade-in slide-in-from-bottom-4 duration-500",
         bgSet
-          ? "mt-10 rounded-2xl border border-border bg-card px-8 py-10 shadow-lg"
-          : "mt-16 px-1",
+          ? "mt-8 rounded-3xl border border-border bg-card/95 px-7 py-8 shadow-xl shadow-black/5 sm:px-10"
+          : "mt-10 px-1 sm:mt-14",
       )}
     >
-      <h2 className="text-center text-3xl font-bold tracking-wide">
-        谁占了端口？
-      </h2>
-      <p className="mt-2 text-center text-[13px] text-muted-foreground">
-        输入端口号、进程名或用户名，找到占用，一键送走
-      </p>
+      <div className="mx-auto max-w-3xl text-center">
+        <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 font-mono text-[10px] font-semibold tracking-[0.16em] text-primary">
+          <span className="relative flex size-2">
+            <span className="absolute inline-flex size-full animate-ping rounded-full bg-ok/50" />
+            <span className="relative inline-flex size-2 rounded-full bg-ok" />
+          </span>
+          LOCAL SOCKETS · LIVE
+        </div>
+        <h2 className="text-3xl font-bold tracking-tight sm:text-[38px]">
+          端口占用，快速定位
+        </h2>
+        <p className="mt-2 text-[13px] text-muted-foreground">
+          搜索端口、进程或用户，查看详情并安全释放
+        </p>
+      </div>
 
       {/* 大搜索框：/ 聚焦 · Esc 清空 · 有词时给匹配数与清空按钮 */}
-      <div className="group mt-7">
-        <div className="flex h-13 items-center gap-3 rounded-2xl border border-border bg-muted/50 px-4 transition-all focus-within:border-primary/60 focus-within:shadow-[0_0_0_4px] focus-within:shadow-primary/15">
-          <Search className="size-4.5 shrink-0 text-muted-foreground transition-colors group-focus-within:text-primary" />
+      <div className="group mx-auto mt-7 max-w-3xl">
+        <div className="flex h-14 items-center gap-3 rounded-2xl border border-border bg-muted/55 px-4 shadow-inner shadow-black/[0.02] transition-all focus-within:border-primary/65 focus-within:bg-card focus-within:shadow-[0_0_0_4px] focus-within:shadow-primary/15">
+          <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+            <Search className="size-4 transition-transform group-focus-within:scale-110" />
+          </div>
           <input
             data-search
             autoFocus
@@ -111,7 +122,8 @@ export default function QueryLanding({
               }
             }}
             placeholder="端口号 / 进程名 / 用户，如 8080"
-            className="w-full bg-transparent text-lg outline-none placeholder:text-muted-foreground/70"
+            aria-label="搜索端口、进程或用户"
+            className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/70 sm:text-base"
           />
           {keyword ? (
             <>
@@ -137,9 +149,9 @@ export default function QueryLanding({
 
       {/* 常用端口速达：只在空态出现，点了直接当搜索词 */}
       {!keyword && (
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
-          <span className="mr-0.5 text-[11px] text-muted-foreground/80">
-            常用端口
+        <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-1.5">
+          <span className="mr-1 text-[10px] font-semibold tracking-wider text-muted-foreground/80">
+            快速筛选
           </span>
           {COMMON_PORTS.map(({ port, label }) => (
             <button
@@ -147,7 +159,7 @@ export default function QueryLanding({
               type="button"
               title={label}
               onClick={() => onKeyword(String(port))}
-              className="cursor-pointer rounded-full border border-border bg-card/70 px-2.5 py-1 font-mono text-[11px] text-muted-foreground backdrop-blur-sm transition-colors hover:border-primary/50 hover:text-primary"
+              className="cursor-pointer rounded-lg border border-border/80 bg-card/70 px-2.5 py-1 font-mono text-[11px] text-muted-foreground backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-primary/50 hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               {port}
             </button>
@@ -157,7 +169,7 @@ export default function QueryLanding({
 
       {keyword ? (
         <>
-          <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
+          <div className="mt-6 flex items-center justify-between border-t border-border/70 pt-4 text-xs text-muted-foreground">
             {portRangeHint(keyword) ? (
               <span className="text-warn">{portRangeHint(keyword)}</span>
             ) : (
@@ -173,10 +185,10 @@ export default function QueryLanding({
               浏览全部 {stats.total} 条 →
             </button>
           </div>
-          <div className="mt-3 animate-in fade-in duration-300">{results}</div>
+          <div className="mt-3 animate-in fade-in duration-300 overflow-x-auto rounded-2xl border border-border/70 bg-card/50 p-2">{results}</div>
         </>
       ) : (
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 border-t border-border/60 pt-5">
           {!loaded ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
               <Loader className="size-3 animate-spin" />

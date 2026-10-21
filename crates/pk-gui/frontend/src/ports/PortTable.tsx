@@ -19,7 +19,7 @@ import PortDetail from "./PortDetail";
 
 /** 列布局（骨架屏也用）；组成员行沿用同一网格，列与外部平铺行对齐 */
 export const GRID =
-  "grid grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_76px_88px] items-center gap-2.5 px-3";
+  "grid min-w-[820px] grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_76px_88px] items-center gap-2.5 px-3";
 
 /** 行标识：同 (port, proto, addr) 的多隐形条目靠调用方追加序号兜底。 */
 export function rowKey(e: PortEntryDto): string {
@@ -175,9 +175,9 @@ export default function PortTable({
   }, [items]);
 
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-[820px] flex-col gap-1">
       <div
-        className={`${GRID} sticky top-0 z-10 pb-2 pt-3 text-[11px] tracking-widest text-muted-foreground bg-card/95 backdrop-blur-md`}
+        className={`${GRID} sticky top-0 z-10 border-b border-border/70 bg-card/95 pb-2.5 pt-3 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground backdrop-blur-md`}
       >
         <SortHeader label="端口" active={sort?.key === "port"} dir={sort?.dir} onClick={() => cycle("port")} />
         <span>协议</span>
@@ -288,8 +288,8 @@ function GroupCard({
   ].filter(Boolean) as string[];
 
   return (
-    <div className="my-1.5 overflow-hidden rounded-xl border border-border bg-card/60">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-muted/50 px-3 py-2">
+    <div className="my-1.5 overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm shadow-black/[0.025]">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/60 bg-muted/45 px-3 py-2.5">
         <span
           title="点击复制端口号"
           onClick={(ev) => copy(ev, String(group.port), "端口")}
@@ -364,9 +364,9 @@ function PortRow({
       <div
         onClick={onToggle}
         title="点击行展开详情"
-        className={`${GRID} cursor-pointer transition-colors hover:bg-muted/40 ${
-          member ? "py-2" : "rounded-[10px] border-b border-border/60 py-2.5"
-        } ${p?.risk === "critical" ? "bg-danger/6" : ""}`}
+        className={`${GRID} cursor-pointer transition-colors hover:bg-primary/[0.045] ${
+          member ? "py-2" : "rounded-xl border border-border/65 bg-card/75 py-2.5 shadow-sm shadow-black/[0.02]"
+        } ${p?.risk === "critical" ? "bg-danger/[0.055]" : ""}`}
       >
         <span className="flex items-center">
           {member ? (
