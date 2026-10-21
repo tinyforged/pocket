@@ -19,7 +19,7 @@ import PortDetail from "./PortDetail";
 
 /** 列布局（骨架屏也用）；组成员行沿用同一网格，列与外部平铺行对齐 */
 export const GRID =
-  "grid grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_92px] items-center gap-2.5 px-3";
+  "grid grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_76px_88px] items-center gap-2.5 px-3";
 
 /** 行标识：同 (port, proto, addr) 的多隐形条目靠调用方追加序号兜底。 */
 export function rowKey(e: PortEntryDto): string {
@@ -27,7 +27,7 @@ export function rowKey(e: PortEntryDto): string {
 }
 
 interface Sort {
-  key: "port" | "name";
+  key: "port" | "name" | "memory";
   dir: "asc" | "desc";
 }
 
@@ -106,13 +106,13 @@ export default function PortTable({
   const [sort, setSort] = useState<Sort | null>(null);
 
   const cycle = (key: Sort["key"]) =>
-    setSort((prev) =>
-      prev?.key !== key
-        ? { key, dir: "asc" }
-        : prev.dir === "asc"
-          ? { key, dir: "desc" }
-          : null,
-    );
+    setSort((prev) => {
+      if (prev?.key !== key)
+        // 内存默认从大到小：点一下就是"谁最吃内存"，反向意义不大
+        return { key, dir: key === "memory" ? "desc" : "asc" };
+      if (key === "memory") return prev.dir === "desc" ? { key, dir: "asc" } : null;
+      return prev.dir === "asc" ? { key, dir: "desc" } : null;
+    });
 
   const items = useMemo(() => {
     const items = buildItems(entries);
@@ -122,6 +122,20 @@ export default function PortTable({
     if (sort.key === "port") {
       const portOf = (it: Item) => (it.kind === "flat" ? it.entry.port : it.port);
       sorted.sort((a, b) => (portOf(a) - portOf(b)) * dir);
+    } else if (sort.key === "memory") {
+      // 组按其最大成员定位（用户找的是"哪个端口上有大内存进程"）
+      const memOf = (it: Item) =>
+        it.kind === "flat"
+          ? (it.entry.process?.memory ?? 0)
+          : Math.max(...it.members.map((m) => m.process?.memory ?? 0));
+      sorted.sort((a, b) => (memOf(a) - memOf(b)) * dir);
+      for (const it of sorted) {
+        if (it.kind === "group")
+          it.members.sort(
+            (x, y) =>
+              ((x.process?.memory ?? 0) - (y.process?.memory ?? 0)) * dir,
+          );
+      }
     } else {
       // 组按其最早成员名定位；隐形条目始终垫底，不受方向影响
       const keyOf = (it: Item) =>
@@ -170,6 +184,7 @@ export default function PortTable({
         <span>地址</span>
         <span>状态</span>
         <SortHeader label="进程" active={sort?.key === "name"} dir={sort?.dir} onClick={() => cycle("name")} />
+        <SortHeader label="内存" active={sort?.key === "memory"} dir={sort?.dir} className="justify-end" onClick={() => cycle("memory")} />
         <span />
       </div>
       {items.map((it) =>
@@ -208,11 +223,13 @@ function SortHeader({
   label,
   active,
   dir,
+  className = "",
   onClick,
 }: {
   label: string;
   active: boolean;
   dir?: Sort["dir"];
+  className?: string;
   onClick: () => void;
 }) {
   return (
@@ -220,7 +237,7 @@ function SortHeader({
       type="button"
       onClick={onClick}
       title="点击排序（再点切换方向）"
-      className="flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground"
+      className={`flex cursor-pointer items-center gap-1 transition-colors hover:text-foreground ${className}`}
     >
       {label}
       {active &&
@@ -404,14 +421,6 @@ function PortRow({
                 pid {p.pid}
                 {p.user ? ` · ${p.user}` : ""}
               </span>
-              {p.memory > 0 && (
-                <span
-                  title="常驻内存（RSS）"
-                  className="font-mono text-[11.5px] text-muted-foreground/70"
-                >
-                  {fmtBytes(p.memory)}
-                </span>
-              )}
               {p.risk === "critical" && (
                 <Badge variant="crit">⚠ 受保护</Badge>
               )}
@@ -422,6 +431,12 @@ function PortRow({
               无法获取（可能需要提权）
             </span>
           )}
+        </span>
+        <span
+          title="常驻内存（RSS），点表头可按内存排序"
+          className="text-right font-mono text-xs text-muted-foreground"
+        >
+          {p && p.memory > 0 ? fmtBytes(p.memory) : "—"}
         </span>
         <span className="text-right">
           {p && (
