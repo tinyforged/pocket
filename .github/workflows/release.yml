@@ -123,7 +123,19 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cargo build --release -p pocket ${{ matrix.args }}
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            # Cargo doesn't have a universal-apple-darwin target. Build both
+            # supported architectures and combine the CLI with Apple's lipo.
+            cargo build --release -p pocket --target aarch64-apple-darwin
+            cargo build --release -p pocket --target x86_64-apple-darwin
+            mkdir -p target/universal-apple-darwin/release
+            lipo -create \
+              target/aarch64-apple-darwin/release/pk \
+              target/x86_64-apple-darwin/release/pk \
+              -output target/universal-apple-darwin/release/pk
+          else
+            cargo build --release -p pocket ${{ matrix.args }}
+          fi
           TAG="${GITHUB_REF_NAME}"
           case "${{ matrix.platform }}" in
             macos-latest)
