@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Pocket",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "identifier": "dev.tinyforged.pocket",
   "mainBinaryName": "pocket",
   "build": {
@@ -22,8 +22,17 @@
       }
     ]
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEZGOTg5NUU4MjI3M0FCOUUKUldTZXEzTWk2SldZL3p3VGI3SldqN3p4TWV4YWtIRlZWRW84V05EbHdPZ3F3dEVtNkRYUTZSSEoK",
+      "endpoints": [
+        "https://github.com/tinyforged/pocket/releases/latest/download/latest.json"
+      ]
+    }
+  },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "targets": ["dmg", "appimage", "deb", "msi", "nsis"],
     "icon": [
       "icons/32x32.png",

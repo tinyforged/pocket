@@ -27,6 +27,9 @@ fn main() {
     std::panic::set_hook(Box::new(|info| logging::error(format!("panic：{info}"))));
 
     tauri::Builder::default()
+        // 版本检测与自更新（GitHub Releases）；安装后由 process 插件负责重启
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .setup(|app| {
             storage::init(app.handle());
             logging::init(app.handle().clone(), storage::dir().join("logs"));

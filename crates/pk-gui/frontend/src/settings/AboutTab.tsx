@@ -1,14 +1,55 @@
 import { getVersion } from "@tauri-apps/api/app";
+import type { Update } from "@tauri-apps/plugin-updater";
+import { CheckCircle2, Download, Loader2, RotateCcw } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { checkUpdate, installUpdate, relaunchApp } from "@/updater/update";
 
-/** 关于：版本与终止策略说明。 */
+/** 关于：版本、在线更新与终止策略说明。 */
 export default function AboutTab() {
   const [version, setVersion] = useState("…");
+  const [update, setUpdate] = useState<Update | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [installed, setInstalled] = useState(false);
+  const [upToDate, setUpToDate] = useState(false);
+
   useEffect(() => {
     void getVersion().then(setVersion).catch(() => setVersion("?"));
   }, []);
+
+  async function onCheck() {
+    setChecking(true);
+    setUpToDate(false);
+    try {
+      const found = await checkUpdate();
+      setUpdate(found);
+      setUpToDate(!found);
+    } catch (e) {
+      toast.error(`检查更新失败：${e}`);
+    } finally {
+      setChecking(false);
+    }
+  }
+
+  async function onInstall() {
+    if (!update) return;
+    setDownloading(true);
+    setProgress(null);
+    try {
+      await installUpdate(update, setProgress);
+      setInstalled(true);
+      toast.success("新版本已安装，重启后生效");
+    } catch (e) {
+      toast.error(`下载或安装失败：${e}`);
+    } finally {
+      setDownloading(false);
+    }
+  }
 
   return (
     <div className="space-y-7">
@@ -22,6 +63,67 @@ export default function AboutTab() {
           <dt className="text-muted-foreground">CLI</dt>
           <dd className="font-mono">pk port kill &lt;端口&gt;</dd>
         </dl>
+      </section>
+
+      <section className="space-y-2.5">
+        <Label className="text-xs text-muted-foreground">更新</Label>
+        <div className="rounded-[10px] border border-border px-3 py-2.5 text-xs">
+          {update ? (
+            <div className="space-y-3">
+              <p>
+                发现新版本 <span className="font-mono">v{update.version}</span>，当前{" "}
+                <span className="font-mono">v{version}</span>
+              </p>
+              {update.body ? (
+                <p className="line-clamp-4 whitespace-pre-wrap text-muted-foreground">
+                  {update.body}
+                </p>
+              ) : null}
+              {installed ? (
+                <Button size="sm" onClick={() => void relaunchApp()}>
+                  <RotateCcw className="size-4" />
+                  重启生效
+                </Button>
+              ) : (
+                <Button
+                  size="sm"
+                  onClick={() => void onInstall()}
+                  disabled={downloading}
+                >
+                  {downloading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Download className="size-4" />
+                  )}
+                  {downloading
+                    ? progress !== null
+                      ? `下载中 ${Math.round(progress * 100)}%`
+                      : "下载中…"
+                    : "下载并安装"}
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              {upToDate ? (
+                <CheckCircle2 className="size-3.5 text-muted-foreground" />
+              ) : null}
+              <span className={upToDate ? "text-muted-foreground" : ""}>
+                {upToDate ? "已是最新版本" : "更新源：GitHub Releases"}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                onClick={() => void onCheck()}
+                disabled={checking}
+              >
+                {checking ? <Loader2 className="size-4 animate-spin" /> : null}
+                {checking ? "检查中…" : "检查更新"}
+              </Button>
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="space-y-2.5">
