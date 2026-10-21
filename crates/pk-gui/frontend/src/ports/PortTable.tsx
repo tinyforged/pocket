@@ -17,7 +17,7 @@ import { fmtBytes } from "@/lib/format";
 import type { RowResult } from "./kill";
 import PortDetail from "./PortDetail";
 
-/** 列布局（骨架屏也用） */
+/** 列布局（骨架屏也用）；组成员行沿用同一网格，列与外部平铺行对齐 */
 export const GRID =
   "grid grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_92px] items-center gap-2.5 px-3";
 
@@ -42,7 +42,7 @@ interface PortTableProps {
   onKillGroup: (processes: ProcessDto[]) => void;
 }
 
-/** 单进程端口 = 平铺行；多进程共用端口 = 组头行 + 缩进成员行。 */
+/** 单进程端口 = 平铺行；多进程共用端口 = 组卡片（头横条 + 成员行）。 */
 type Item =
   | { kind: "flat"; entry: PortEntryDto }
   | {
@@ -186,30 +186,18 @@ export default function PortTable({
             onKill={onKill}
           />
         ) : (
-          <Fragment key={`g${it.port}/${it.protocol}`}>
-            <GroupHeader
-              port={it.port}
-              protocol={it.protocol}
-              processes={it.processes}
-              invisible={
-                it.members.filter((m) => !m.process).length
-              }
-              busy={it.processes.some((p) => killing.has(p.pid))}
-              onKillGroup={onKillGroup}
-            />
-            {it.members.map((m) => (
-              <PortRow
-                key={keyOf.get(m)}
-                entry={m}
-                indent
-                open={expanded.has(keyOf.get(m)!)}
-                onToggle={() => onToggle(keyOf.get(m)!)}
-                killing={killing.has(m.process?.pid ?? -1)}
-                result={m.process ? results.get(m.process.pid) : undefined}
-                onKill={onKill}
-              />
-            ))}
-          </Fragment>
+          <GroupCard
+            key={`g${it.port}/${it.protocol}`}
+            group={it}
+            busy={it.processes.some((p) => killing.has(p.pid))}
+            keyOf={keyOf}
+            expanded={expanded}
+            onToggle={onToggle}
+            killing={killing}
+            results={results}
+            onKill={onKill}
+            onKillGroup={onKillGroup}
+          />
         ),
       )}
     </div>
@@ -252,69 +240,91 @@ function copy(ev: { stopPropagation: () => void }, text: string, what: string) {
   toast.success(`已复制${what}：${text}`);
 }
 
-/** 组头行：扛端口号与"全部终止"，成员行只放差异信息。 */
-function GroupHeader({
-  port,
-  protocol,
-  processes,
-  invisible,
+/** 组卡片：头横条自由布局（端口号 + 概要 + 全部终止），成员行沿用数据网格。 */
+function GroupCard({
+  group,
   busy,
+  keyOf,
+  expanded,
+  onToggle,
+  killing,
+  results,
+  onKill,
   onKillGroup,
 }: {
-  port: number;
-  protocol: "tcp" | "udp";
-  processes: ProcessDto[];
-  invisible: number;
+  group: Extract<Item, { kind: "group" }>;
   busy: boolean;
+  keyOf: Map<PortEntryDto, string>;
+  expanded: Set<string>;
+  onToggle: (key: string) => void;
+  killing: Set<number>;
+  results: Map<number, RowResult>;
+  onKill: (process: ProcessDto) => void;
   onKillGroup: (processes: ProcessDto[]) => void;
 }) {
-  const mem = processes.reduce((s, p) => s + p.memory, 0);
+  const invisible = group.members.filter((m) => !m.process).length;
+  const mem = group.processes.reduce((s, p) => s + p.memory, 0);
+  const meta = [
+    "SO_REUSEPORT",
+    mem > 0 ? `合计 ${fmtBytes(mem)}` : null,
+    invisible > 0 ? `+${invisible} 条不可见` : null,
+  ].filter(Boolean) as string[];
+
   return (
-    <div
-      className={`${GRID} mt-2 rounded-[10px] border border-primary/25 bg-primary/5 py-1.5`}
-    >
-      <span
-        title="点击复制端口号"
-        onClick={(ev) => copy(ev, String(port), "端口")}
-        className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
-      >
-        {port}
-      </span>
-      <span>
+    <div className="my-1.5 overflow-hidden rounded-xl border border-border bg-card/60">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-muted/50 px-3 py-2">
+        <span
+          title="点击复制端口号"
+          onClick={(ev) => copy(ev, String(group.port), "端口")}
+          className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
+        >
+          {group.port}
+        </span>
         <Badge
-          variant={protocol === "tcp" ? "protoTcp" : "protoUdp"}
+          variant={group.protocol === "tcp" ? "protoTcp" : "protoUdp"}
           className="uppercase"
         >
-          {protocol}
+          {group.protocol}
         </Badge>
-      </span>
-      <span className="truncate text-xs font-medium text-foreground">
-        {processes.length} 个进程共用
-      </span>
-      <span className="truncate text-[11px] text-muted-foreground">
-        {invisible > 0 ? `+${invisible} 条不可见` : "SO_REUSEPORT"}
-      </span>
-      <span className="truncate text-[11px] text-muted-foreground">
-        {mem > 0 && `${fmtBytes(mem)} 内存`}
-      </span>
-      <span className="text-right">
-        <Button
-          size="xs"
-          variant="dangerGhost"
-          disabled={busy}
-          onClick={() => onKillGroup(processes)}
-        >
-          {busy ? <Loader className="animate-spin" /> : <ZapOff />}
-          全部终止
-        </Button>
-      </span>
+        <span className="text-xs font-semibold">
+          {group.processes.length} 个进程共用
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          {meta.join(" · ")}
+        </span>
+        <span className="ml-auto">
+          <Button
+            size="xs"
+            variant="dangerGhost"
+            disabled={busy}
+            onClick={() => onKillGroup(group.processes)}
+          >
+            {busy ? <Loader className="animate-spin" /> : <ZapOff />}
+            全部终止
+          </Button>
+        </span>
+      </div>
+      <div className="divide-y divide-border/50">
+        {group.members.map((m) => (
+          <PortRow
+            key={keyOf.get(m)}
+            entry={m}
+            member
+            open={expanded.has(keyOf.get(m)!)}
+            onToggle={() => onToggle(keyOf.get(m)!)}
+            killing={killing.has(m.process?.pid ?? -1)}
+            result={m.process ? results.get(m.process.pid) : undefined}
+            onKill={onKill}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 function PortRow({
   entry: e,
-  indent,
+  member,
   open,
   onToggle,
   killing,
@@ -322,8 +332,8 @@ function PortRow({
   onKill,
 }: {
   entry: PortEntryDto;
-  /** 组成员行：端口号留在组头，这里以折角箭头示意从属 */
-  indent?: boolean;
+  /** 组卡片内成员行：无自带分隔（卡片负责），首格以折角箭头示意从属 */
+  member?: boolean;
   open: boolean;
   onToggle: () => void;
   killing: boolean;
@@ -337,12 +347,12 @@ function PortRow({
       <div
         onClick={onToggle}
         title="点击行展开详情"
-        className={`${GRID} cursor-pointer rounded-[10px] border-b border-border/60 py-2.5 transition-colors hover:bg-muted/50 ${
-          indent ? "bg-muted/25" : ""
+        className={`${GRID} cursor-pointer transition-colors hover:bg-muted/40 ${
+          member ? "py-2" : "rounded-[10px] border-b border-border/60 py-2.5"
         } ${p?.risk === "critical" ? "bg-danger/6" : ""}`}
       >
         <span className="flex items-center">
-          {indent ? (
+          {member ? (
             <CornerDownRight className="size-3.5 text-muted-foreground/50" />
           ) : (
             <span
@@ -355,7 +365,7 @@ function PortRow({
           )}
         </span>
         <span>
-          {!indent && (
+          {!member && (
             <Badge
               variant={e.protocol === "tcp" ? "protoTcp" : "protoUdp"}
               className="uppercase"
