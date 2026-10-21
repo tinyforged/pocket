@@ -72,7 +72,7 @@ export default function SettingsDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[85vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-150 max-h-[85vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
         <header className="border-b border-border px-6 py-4">
           <h2 className="text-base font-semibold">设置</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">

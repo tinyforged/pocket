@@ -1,4 +1,4 @@
-import { Loader } from "lucide-react";
+import { Loader, PartyPopper, SearchX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Toaster } from "sonner";
 
@@ -125,10 +125,13 @@ export default function App() {
                     onKill={kill.setTarget}
                   />
                 ) : (
-                  <div className="grid place-items-center py-16 text-muted-foreground">
-                    <div className="text-4xl">🔍</div>
-                    <p className="mt-3 text-sm">
-                      没有匹配的端口占用（Esc 清空搜索）
+                  <div className="grid place-items-center gap-3 py-16 text-muted-foreground">
+                    <div className="grid size-12 place-items-center rounded-full bg-muted/70">
+                      <SearchX className="size-5" />
+                    </div>
+                    <p className="text-sm">没有匹配的端口占用</p>
+                    <p className="text-xs text-muted-foreground/70">
+                      试试端口号（如 3000）、进程名或用户，Esc 清空搜索
                     </p>
                   </div>
                 )}
@@ -156,13 +159,22 @@ export default function App() {
                 onKill={kill.setTarget}
               />
             ) : (
-              <div className="grid place-items-center py-24 text-muted-foreground">
-                <div className="text-5xl">{keyword ? "🔍" : "🎉"}</div>
-                <p className="mt-3 text-sm">
-                  {keyword
-                    ? "没有匹配的端口占用（Esc 清空搜索）"
-                    : "当前没有端口被占用"}
+              <div className="grid place-items-center gap-3 py-24 text-muted-foreground">
+                <div className="grid size-14 place-items-center rounded-full bg-muted/70">
+                  {keyword ? (
+                    <SearchX className="size-6" />
+                  ) : (
+                    <PartyPopper className="size-6 text-ok" />
+                  )}
+                </div>
+                <p className="text-sm">
+                  {keyword ? "没有匹配的端口占用" : "当前没有端口被占用"}
                 </p>
+                {keyword && (
+                  <p className="text-xs text-muted-foreground/70">
+                    试试端口号（如 3000）、进程名或用户，Esc 清空搜索
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -191,10 +203,7 @@ export default function App() {
         onOpenChange={setSettingsOpen}
         bgSet={bgUrl !== null}
         onBgChanged={reloadBg}
-        onOpenLogs={() => {
-          setSettingsOpen(false);
-          setLogOpen(true);
-        }}
+        onOpenLogs={() => setLogOpen(true)}
       />
 
       <LogDialog open={logOpen} onOpenChange={setLogOpen} />

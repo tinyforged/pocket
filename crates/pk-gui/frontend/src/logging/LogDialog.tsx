@@ -76,7 +76,7 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[80vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
+      <DialogContent className="flex h-140 max-h-[80vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
         <header className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
             <h2 className="text-base font-semibold">实时日志</h2>
@@ -84,7 +84,8 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
               最新 1000 条实时滚动，完整记录已落盘（1MB 自动轮转）。
             </p>
           </div>
-          <div className="flex gap-2">
+          {/* 右上角留给弹窗自带的关闭按钮 */}
+          <div className="mr-10 flex gap-2">
             <Button size="sm" variant="outline" onClick={() => void exportAll()}>
               <FileDown className="size-3.5" />
               导出…

@@ -84,6 +84,10 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+::selection {
+  background: color-mix(in srgb, var(--primary) 24%, transparent);
+}
+
 /* 细滚动条，两种主题各自适配 */
 *::-webkit-scrollbar {
   width: 8px;
