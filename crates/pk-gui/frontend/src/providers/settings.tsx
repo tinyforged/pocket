@@ -59,8 +59,8 @@ export const BG_FIT_OPTIONS: { value: BgFit; label: string }[] = [
 ];
 
 export const DEFAULTS: Settings = {
-  autoRefresh: false,
-  intervalMs: 4000,
+  autoRefresh: true,
+  intervalMs: 30000,
   accent: "ocean",
   showTrayIcon: false,
   closeToQuit: true,

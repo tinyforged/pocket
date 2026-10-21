@@ -12,9 +12,10 @@ export default function RefreshSection() {
     <section className="space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <Label>自动刷新占用列表</Label>
+          <Label>智能自动刷新</Label>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            开启后按设定频率重新扫描（只读操作，不会自动终止任何进程）
+            按设定频率静默重扫（默认 30 秒），占用无变化时不刷新界面、
+            不打断操作；有变化才更新列表（只读操作，不会自动终止任何进程）
           </p>
         </div>
         <Switch
