@@ -10,11 +10,11 @@ permissions:
 
 jobs:
   check:
-    # ubuntu 全量检查；windows 补平台差异（cfg 相关警告在 mac 上看不见）
+    # 三平台各查各的 cfg 分支（elevation 有 macos/linux/windows 三分代码）
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest]
+        os: [ubuntu-22.04, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
