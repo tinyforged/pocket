@@ -1,1 +1,4 @@
 /target
+
+# tauri-build 每次构建重新生成的 schema
+/crates/pk-gui/gen/
