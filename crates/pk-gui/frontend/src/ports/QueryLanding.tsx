@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import PortFilters, { type ProtocolFilter } from "@/ports/PortFilters";
 import { portRangeHint } from "@/ports/scan";
 
 interface QueryLandingProps {
@@ -22,6 +23,12 @@ interface QueryLandingProps {
   matchCount: number;
   /** 有背景图时垫不透明卡片保证可读性 */
   bgSet: boolean;
+  searchEntries: { protocol: "tcp" | "udp"; state: string | null }[];
+  protocol: ProtocolFilter;
+  listeningOnly: boolean;
+  onProtocolChange: (value: ProtocolFilter) => void;
+  onListeningChange: (value: boolean) => void;
+  hasRefinement: boolean;
   onBrowseAll: () => void;
   /** keyword 非空时的匹配列表（PortTable） */
   results: ReactNode;
@@ -76,6 +83,12 @@ export default function QueryLanding({
   stats,
   matchCount,
   bgSet,
+  searchEntries,
+  protocol,
+  listeningOnly,
+  onProtocolChange,
+  onListeningChange,
+  hasRefinement,
   onBrowseAll,
   results,
 }: QueryLandingProps) {
@@ -100,7 +113,7 @@ export default function QueryLanding({
           端口占用，快速定位
         </h2>
         <p className="mt-2 text-[13px] text-muted-foreground">
-          搜索端口、进程或用户，查看详情并安全释放
+          搜索端口、地址、PID、进程或用户，查看详情并安全释放
         </p>
       </div>
 
@@ -121,8 +134,8 @@ export default function QueryLanding({
                 e.currentTarget.blur();
               }
             }}
-            placeholder="端口号 / 进程名 / 用户，如 8080"
-            aria-label="搜索端口、进程或用户"
+            placeholder="端口 / 地址 / PID / 进程名 / 用户，如 8080"
+            aria-label="搜索端口、地址、PID、进程或用户"
             className="w-full bg-transparent text-[15px] outline-none placeholder:text-muted-foreground/70 sm:text-base"
           />
           {keyword ? (
@@ -147,8 +160,18 @@ export default function QueryLanding({
         </div>
       </div>
 
+      <div className="mx-auto mt-3 max-w-3xl">
+        <PortFilters
+          protocol={protocol}
+          listeningOnly={listeningOnly}
+          onProtocolChange={onProtocolChange}
+          onListeningChange={onListeningChange}
+          entries={searchEntries}
+        />
+      </div>
+
       {/* 常用端口速达：只在空态出现，点了直接当搜索词 */}
-      {!keyword && (
+      {!hasRefinement && (
         <div className="mx-auto mt-4 flex max-w-3xl flex-wrap items-center justify-center gap-1.5">
           <span className="mr-1 text-[10px] font-semibold tracking-wider text-muted-foreground/80">
             快速筛选
@@ -167,14 +190,16 @@ export default function QueryLanding({
         </div>
       )}
 
-      {keyword ? (
+      {hasRefinement ? (
         <>
           <div className="mt-6 flex items-center justify-between border-t border-border/70 pt-4 text-xs text-muted-foreground">
             {portRangeHint(keyword) ? (
               <span className="text-warn">{portRangeHint(keyword)}</span>
             ) : (
               <span>
-                找到 <b className="font-mono text-foreground">{matchCount}</b> 条匹配
+                {keyword ? "找到 " : "当前筛选命中 "}
+                <b className="font-mono text-foreground">{matchCount}</b>
+                {keyword ? " 条匹配" : " 条端口占用"}
               </span>
             )}
             <button
@@ -185,7 +210,9 @@ export default function QueryLanding({
               浏览全部 {stats.total} 条 →
             </button>
           </div>
-          <div className="mt-3 animate-in fade-in duration-300 overflow-x-auto rounded-2xl border border-border/70 bg-card/50 p-2">{results}</div>
+          <div className="mt-3 animate-in fade-in duration-300 overflow-x-auto rounded-2xl border border-border/70 bg-card/50 p-2">
+            {results}
+          </div>
         </>
       ) : (
         <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5 border-t border-border/60 pt-5">

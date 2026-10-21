@@ -93,8 +93,13 @@ export function filterEntries(
     const p = e.process;
     return (
       String(e.port).includes(k) ||
+      e.localAddr.toLowerCase().includes(k) ||
+      e.protocol.includes(k) ||
+      (e.state?.toLowerCase().includes(k) ?? false) ||
+      (p ? String(p.pid).includes(k) : false) ||
       (p?.name.toLowerCase().includes(k) ?? false) ||
-      (p?.user?.toLowerCase().includes(k) ?? false)
+      (p?.user?.toLowerCase().includes(k) ?? false) ||
+      (p?.exe?.toLowerCase().includes(k) ?? false)
     );
   });
 }

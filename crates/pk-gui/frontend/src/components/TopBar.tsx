@@ -115,7 +115,7 @@ export default function TopBar({
                 e.currentTarget.blur();
               }
             }}
-            placeholder="端口 / 进程名 / 用户，按 / 聚焦"
+            placeholder="端口 / 地址 / PID / 进程 / 用户，按 / 聚焦"
             className="w-52 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
           />
           {keyword && (

@@ -15,6 +15,7 @@ import KillDialog from "@/ports/KillDialog";
 import { useKill } from "@/ports/kill";
 import ListSkeleton from "@/ports/ListSkeleton";
 import PortTable from "@/ports/PortTable";
+import PortFilters, { type ProtocolFilter } from "@/ports/PortFilters";
 import QueryLanding from "@/ports/QueryLanding";
 import ScanTime from "@/ports/ScanTime";
 import { filterEntries, portRangeHint, summarize, usePortScan } from "@/ports/scan";
@@ -32,6 +33,8 @@ function readMode(): ViewMode {
  */
 export default function App() {
   const [keyword, setKeyword] = useState("");
+  const [protocolFilter, setProtocolFilter] = useState<ProtocolFilter>("all");
+  const [listeningOnly, setListeningOnly] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
@@ -48,9 +51,19 @@ export default function App() {
   const elevated = useElevation();
   const { bgUrl, reloadBg } = useAppearanceSync();
 
-  const visibleEntries = useMemo(
+  const searchEntries = useMemo(
     () => filterEntries(entries, keyword),
     [entries, keyword],
+  );
+  const visibleEntries = useMemo(
+    () => searchEntries.filter((entry) =>
+      (protocolFilter === "all" || entry.protocol === protocolFilter) &&
+      (!listeningOnly || entry.state === "LISTEN"),
+    ),
+    [searchEntries, protocolFilter, listeningOnly],
+  );
+  const hasRefinement = Boolean(
+    keyword || protocolFilter !== "all" || listeningOnly,
   );
   const stats = useMemo(() => summarize(entries), [entries]);
 
@@ -110,6 +123,12 @@ export default function App() {
             stats={stats}
             matchCount={visibleEntries.length}
             bgSet={bgUrl !== null}
+            searchEntries={searchEntries}
+            protocol={protocolFilter}
+            listeningOnly={listeningOnly}
+            onProtocolChange={setProtocolFilter}
+            onListeningChange={setListeningOnly}
+            hasRefinement={hasRefinement}
             onBrowseAll={() => setMode("list")}
             results={
               <>
@@ -128,9 +147,15 @@ export default function App() {
                     <div className="grid size-12 place-items-center rounded-full bg-muted/70">
                       <SearchX className="size-5" />
                     </div>
-                    <p className="text-sm">没有匹配的端口占用</p>
+                    <p className="text-sm">
+                      {hasRefinement
+                        ? "没有符合条件的端口占用"
+                        : "没有匹配的端口占用"}
+                    </p>
                     <p className="text-xs text-muted-foreground/70">
-                      试试端口号（如 3000）、进程名或用户，Esc 清空搜索
+                      {keyword
+                        ? "试试端口号、地址、PID、进程名或用户，Esc 清空搜索"
+                        : "可以调整协议或监听状态筛选"}
                     </p>
                   </div>
                 )}
@@ -142,10 +167,17 @@ export default function App() {
           <div
             className={
               bgUrl
-                ? "rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
-                : ""
+                ? "overflow-x-auto rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
+                : "overflow-x-auto"
             }
           >
+            <PortFilters
+              protocol={protocolFilter}
+              listeningOnly={listeningOnly}
+              onProtocolChange={setProtocolFilter}
+              onListeningChange={setListeningOnly}
+              entries={searchEntries}
+            />
             {!loaded ? (
               <ListSkeleton />
             ) : visibleEntries.length > 0 ? (
@@ -168,11 +200,16 @@ export default function App() {
                   )}
                 </div>
                 <p className="text-sm">
-                  {portRangeHint(keyword) ?? (keyword ? "没有匹配的端口占用" : "当前没有端口被占用")}
+                  {portRangeHint(keyword) ??
+                    (hasRefinement
+                      ? "没有符合条件的端口占用"
+                      : "当前没有端口被占用")}
                 </p>
-                {keyword && !portRangeHint(keyword) && (
+                {hasRefinement && !portRangeHint(keyword) && (
                   <p className="text-xs text-muted-foreground/70">
-                    试试端口号（如 3000）、进程名或用户，Esc 清空搜索
+                    {keyword
+                      ? "试试端口号、地址、PID、进程名或用户，Esc 清空搜索"
+                      : "可以调整协议或监听状态筛选"}
                   </p>
                 )}
               </div>
