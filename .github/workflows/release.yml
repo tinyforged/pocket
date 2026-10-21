@@ -17,7 +17,7 @@ jobs:
         os: [ubuntu-22.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -38,11 +38,11 @@ jobs:
       - run: cargo test --workspace
 
       # 前端与平台无关，ubuntu 侧查一次即可
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         if: matrix.os == 'ubuntu-22.04'
         with:
           version: 11
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         if: matrix.os == 'ubuntu-22.04'
         with:
           node-version: 24
@@ -72,12 +72,12 @@ jobs:
     runs-on: ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         with:
           version: 11
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: pnpm
