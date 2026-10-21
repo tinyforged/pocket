@@ -1,13 +1,20 @@
-import { ArrowDown, ArrowUp, ChevronRight, Layers, Loader, ZapOff } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronRight,
+  CornerDownRight,
+  Loader,
+  ZapOff,
+} from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { PortEntryDto, ProcessDto } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { fmtBytes } from "@/lib/format";
 
 import type { RowResult } from "./kill";
-import { fmtBytes } from "@/lib/format";
 import PortDetail from "./PortDetail";
 
 /** 列布局（骨架屏也用） */
@@ -35,6 +42,57 @@ interface PortTableProps {
   onKillGroup: (processes: ProcessDto[]) => void;
 }
 
+/** 单进程端口 = 平铺行；多进程共用端口 = 组头行 + 缩进成员行。 */
+type Item =
+  | { kind: "flat"; entry: PortEntryDto }
+  | {
+      kind: "group";
+      port: number;
+      protocol: "tcp" | "udp";
+      members: PortEntryDto[];
+      /** 可见且去重后的进程（"全部终止"的目标） */
+      processes: ProcessDto[];
+    };
+
+/** 按 (port, protocol) 聚合；去重 pid ≥ 2 才成组（SO_REUSEPORT 等）。 */
+function buildItems(entries: PortEntryDto[]): Item[] {
+  const byKey = new Map<string, PortEntryDto[]>();
+  for (const e of entries) {
+    const arr = byKey.get(`${e.port}/${e.protocol}`) ?? [];
+    arr.push(e);
+    byKey.set(`${e.port}/${e.protocol}`, arr);
+  }
+
+  const items: Item[] = [];
+  const seen = new Set<string>();
+  for (const e of entries) {
+    const key = `${e.port}/${e.protocol}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const members = byKey.get(key)!;
+    const processes: ProcessDto[] = [];
+    for (const m of members) {
+      if (m.process && !processes.some((p) => p.pid === m.process!.pid))
+        processes.push(m.process);
+    }
+    if (processes.length >= 2) {
+      items.push({
+        kind: "group",
+        port: e.port,
+        protocol: e.protocol,
+        members,
+        processes,
+      });
+    } else {
+      items.push({ kind: "flat", entry: e });
+    }
+  }
+  return items;
+}
+
+/** 成员行排序键：进程名（隐形排最后）。 */
+const nameOf = (e: PortEntryDto): string => e.process?.name ?? "￿";
+
 export default function PortTable({
   entries,
   expanded,
@@ -56,41 +114,51 @@ export default function PortTable({
           : null,
     );
 
-  const sorted = useMemo(() => {
-    if (!sort) return entries;
+  const items = useMemo(() => {
+    const items = buildItems(entries);
+    if (!sort) return items;
     const dir = sort.dir === "asc" ? 1 : -1;
-    return [...entries].sort((a, b) => {
-      if (sort.key === "port") return (a.port - b.port) * dir;
-      // 隐形条目始终排最后，不受方向影响
-      if (!a.process || !b.process) return a.process ? -1 : b.process ? 1 : 0;
-      return a.process.name.localeCompare(b.process.name, "zh") * dir;
-    });
+    const sorted = [...items];
+    if (sort.key === "port") {
+      const portOf = (it: Item) => (it.kind === "flat" ? it.entry.port : it.port);
+      sorted.sort((a, b) => (portOf(a) - portOf(b)) * dir);
+    } else {
+      // 组按其最早成员名定位；隐形条目始终垫底，不受方向影响
+      const keyOf = (it: Item) =>
+        it.kind === "flat"
+          ? nameOf(it.entry)
+          : it.members.map(nameOf).sort()[0] ?? "￿";
+      sorted.sort((a, b) => {
+        const ka = keyOf(a);
+        const kb = keyOf(b);
+        if (ka === "￿" && kb === "￿") return 0;
+        if (ka === "￿") return 1;
+        if (kb === "￿") return -1;
+        return ka.localeCompare(kb, "zh") * dir;
+      });
+      // 组内成员同名序
+      for (const it of sorted) {
+        if (it.kind === "group")
+          it.members.sort((a, b) => nameOf(a).localeCompare(nameOf(b), "zh") * dir);
+      }
+    }
+    return sorted;
   }, [entries, sort]);
 
-  // 多进程共用同一端口（SO_REUSEPORT，或同 pid 多地址算 1 个进程）：
-  // 按 (port, protocol) 聚合去重 pid，≥2 才出"全部终止"组条
-  const groups = useMemo(() => {
-    const m = new Map<string, ProcessDto[]>();
-    for (const e of entries) {
-      const p = e.process;
-      if (!p) continue;
-      const key = `${e.port}/${e.protocol}`;
-      const arr = m.get(key) ?? [];
-      if (!arr.some((x) => x.pid === p.pid)) arr.push(p);
-      m.set(key, arr);
+  // 展开集合的键以"当前渲染顺序下的出现序号"去重，先摊平再回填
+  const keyOf = useMemo(() => {
+    const m = new Map<PortEntryDto, string>();
+    const count = new Map<string, number>();
+    for (const e of items.flatMap((it) =>
+      it.kind === "group" ? it.members : [it.entry],
+    )) {
+      const base = rowKey(e);
+      const n = count.get(base) ?? 0;
+      count.set(base, n + 1);
+      m.set(e, n === 0 ? base : `${base}~${n}`);
     }
-    return new Map([...m].filter(([, ps]) => ps.length >= 2));
-  }, [entries]);
-
-  // 排序后每组的首次出现位置，组条插在那儿
-  const groupFirstIdx = useMemo(() => {
-    const first = new Map<string, number>();
-    sorted.forEach((e, i) => {
-      const key = `${e.port}/${e.protocol}`;
-      if (!first.has(key)) first.set(key, i);
-    });
-    return first;
-  }, [sorted]);
+    return m;
+  }, [items]);
 
   return (
     <div className="flex flex-col gap-0.5">
@@ -104,52 +172,46 @@ export default function PortTable({
         <SortHeader label="进程" active={sort?.key === "name"} dir={sort?.dir} onClick={() => cycle("name")} />
         <span />
       </div>
-      {sorted.map((e, i) => {
-        // 同 (port, proto, addr) 可能有多条"无法获取进程"的记录：
-        // 用该 rowKey 的第 n 次出现做后缀，排序重排后身份仍稳定
-        const base = rowKey(e);
-        const dup = sorted.slice(0, i).filter((x) => rowKey(x) === base).length;
-        const key = dup === 0 ? base : `${base}~${dup}`;
-        // 多进程组条：只在组内首行上方渲染一次
-        const gk = `${e.port}/${e.protocol}`;
-        const group = groups.get(gk);
-        const showBar = group != null && groupFirstIdx.get(gk) === i;
-        const groupBusy = group?.some((x) => killing.has(x.pid)) ?? false;
-        return (
-          <Fragment key={key}>
-            {showBar && group && (
-              <div className="mb-1 mt-2 flex items-center justify-between gap-3 rounded-[10px] border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs">
-                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
-                  <Layers className="size-3.5 shrink-0 text-primary" />
-                  端口 <b className="font-mono text-foreground">{e.port}</b> 被{" "}
-                  {group.length} 个进程共用（可逐个终止，或）
-                </span>
-                <Button
-                  size="xs"
-                  variant="dangerGhost"
-                  disabled={groupBusy}
-                  onClick={() => onKillGroup(group)}
-                >
-                  {groupBusy ? (
-                    <Loader className="animate-spin" />
-                  ) : (
-                    <ZapOff />
-                  )}
-                  全部终止
-                </Button>
-              </div>
-            )}
-            <PortRow
-              entry={e}
-              open={expanded.has(key)}
-              onToggle={() => onToggle(key)}
-              killing={killing.has(e.process?.pid ?? -1)}
-              result={e.process ? results.get(e.process.pid) : undefined}
-              onKill={onKill}
+      {items.map((it) =>
+        it.kind === "flat" ? (
+          <PortRow
+            key={keyOf.get(it.entry)}
+            entry={it.entry}
+            open={expanded.has(keyOf.get(it.entry)!)}
+            onToggle={() => onToggle(keyOf.get(it.entry)!)}
+            killing={killing.has(it.entry.process?.pid ?? -1)}
+            result={
+              it.entry.process ? results.get(it.entry.process.pid) : undefined
+            }
+            onKill={onKill}
+          />
+        ) : (
+          <Fragment key={`g${it.port}/${it.protocol}`}>
+            <GroupHeader
+              port={it.port}
+              protocol={it.protocol}
+              processes={it.processes}
+              invisible={
+                it.members.filter((m) => !m.process).length
+              }
+              busy={it.processes.some((p) => killing.has(p.pid))}
+              onKillGroup={onKillGroup}
             />
+            {it.members.map((m) => (
+              <PortRow
+                key={keyOf.get(m)}
+                entry={m}
+                indent
+                open={expanded.has(keyOf.get(m)!)}
+                onToggle={() => onToggle(keyOf.get(m)!)}
+                killing={killing.has(m.process?.pid ?? -1)}
+                result={m.process ? results.get(m.process.pid) : undefined}
+                onKill={onKill}
+              />
+            ))}
           </Fragment>
-        );
-      })}
+        ),
+      )}
     </div>
   );
 }
@@ -190,8 +252,69 @@ function copy(ev: { stopPropagation: () => void }, text: string, what: string) {
   toast.success(`已复制${what}：${text}`);
 }
 
+/** 组头行：扛端口号与"全部终止"，成员行只放差异信息。 */
+function GroupHeader({
+  port,
+  protocol,
+  processes,
+  invisible,
+  busy,
+  onKillGroup,
+}: {
+  port: number;
+  protocol: "tcp" | "udp";
+  processes: ProcessDto[];
+  invisible: number;
+  busy: boolean;
+  onKillGroup: (processes: ProcessDto[]) => void;
+}) {
+  const mem = processes.reduce((s, p) => s + p.memory, 0);
+  return (
+    <div
+      className={`${GRID} mt-2 rounded-[10px] border border-primary/25 bg-primary/5 py-1.5`}
+    >
+      <span
+        title="点击复制端口号"
+        onClick={(ev) => copy(ev, String(port), "端口")}
+        className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
+      >
+        {port}
+      </span>
+      <span>
+        <Badge
+          variant={protocol === "tcp" ? "protoTcp" : "protoUdp"}
+          className="uppercase"
+        >
+          {protocol}
+        </Badge>
+      </span>
+      <span className="truncate text-xs font-medium text-foreground">
+        {processes.length} 个进程共用
+      </span>
+      <span className="truncate text-[11px] text-muted-foreground">
+        {invisible > 0 ? `+${invisible} 条不可见` : "SO_REUSEPORT"}
+      </span>
+      <span className="truncate text-[11px] text-muted-foreground">
+        {mem > 0 && `${fmtBytes(mem)} 内存`}
+      </span>
+      <span className="text-right">
+        <Button
+          size="xs"
+          variant="dangerGhost"
+          disabled={busy}
+          onClick={() => onKillGroup(processes)}
+        >
+          {busy ? <Loader className="animate-spin" /> : <ZapOff />}
+          全部终止
+        </Button>
+      </span>
+    </div>
+  );
+}
+
 function PortRow({
   entry: e,
+  indent,
   open,
   onToggle,
   killing,
@@ -199,6 +322,8 @@ function PortRow({
   onKill,
 }: {
   entry: PortEntryDto;
+  /** 组成员行：端口号留在组头，这里以折角箭头示意从属 */
+  indent?: boolean;
   open: boolean;
   onToggle: () => void;
   killing: boolean;
@@ -213,23 +338,31 @@ function PortRow({
         onClick={onToggle}
         title="点击行展开详情"
         className={`${GRID} cursor-pointer rounded-[10px] border-b border-border/60 py-2.5 transition-colors hover:bg-muted/50 ${
-          p?.risk === "critical" ? "bg-danger/6" : ""
-        }`}
+          indent ? "bg-muted/25" : ""
+        } ${p?.risk === "critical" ? "bg-danger/6" : ""}`}
       >
-        <span
-          title="点击复制端口号"
-          onClick={(ev) => copy(ev, String(e.port), "端口")}
-          className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
-        >
-          {e.port}
+        <span className="flex items-center">
+          {indent ? (
+            <CornerDownRight className="size-3.5 text-muted-foreground/50" />
+          ) : (
+            <span
+              title="点击复制端口号"
+              onClick={(ev) => copy(ev, String(e.port), "端口")}
+              className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
+            >
+              {e.port}
+            </span>
+          )}
         </span>
         <span>
-          <Badge
-            variant={e.protocol === "tcp" ? "protoTcp" : "protoUdp"}
-            className="uppercase"
-          >
-            {e.protocol}
-          </Badge>
+          {!indent && (
+            <Badge
+              variant={e.protocol === "tcp" ? "protoTcp" : "protoUdp"}
+              className="uppercase"
+            >
+              {e.protocol}
+            </Badge>
+          )}
         </span>
         <span className="truncate font-mono text-xs text-muted-foreground">
           {e.localAddr}
@@ -305,7 +438,7 @@ function PortRow({
 
       {result && (
         <div
-          className={`py-1 pl-[100px] font-mono text-xs ${result.ok ? "text-ok" : "text-danger"}`}
+          className={`py-1 pl-25 font-mono text-xs ${result.ok ? "text-ok" : "text-danger"}`}
         >
           {result.ok ? "✓" : "✕"} {result.text}
         </div>
