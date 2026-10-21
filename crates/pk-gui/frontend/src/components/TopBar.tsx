@@ -1,4 +1,5 @@
 import {
+  ListTree,
   Loader,
   Monitor,
   Moon,
@@ -15,10 +16,14 @@ import { Switch } from "@/components/ui/switch";
 import { useSettings } from "@/providers/settings";
 import { useTheme, type ThemePreference } from "@/providers/theme";
 
+export type ViewMode = "query" | "list";
+
 interface TopBarProps {
+  mode: ViewMode;
+  onMode: (mode: ViewMode) => void;
   keyword: string;
   onKeyword: (value: string) => void;
-  /** 过滤后的条数（有关键字时显示"匹配/总数"） */
+  /** 过滤后的条数（有关键字时显示"匹配/总数"；速查模式搜索在首页大框） */
   matchCount: number;
   totalCount: number;
   onRefresh: () => void;
@@ -38,6 +43,8 @@ const THEME_META: Record<
 
 /** 应用顶栏：品牌 / 搜索 / 刷新与外观入口（跨领域的应用级组件）。 */
 export default function TopBar({
+  mode,
+  onMode,
   keyword,
   onKeyword,
   matchCount,
@@ -72,7 +79,30 @@ export default function TopBar({
       </div>
 
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-2 rounded-[10px] border border-border bg-muted/50 px-3 py-1.5 transition-colors focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px] focus-within:shadow-primary/15">
+        {mode === "query" ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onMode("list")}
+            title="切换到列表模式，浏览全部端口占用"
+          >
+            <ListTree />
+            浏览全部
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onMode("query")}
+            title="切换到速查模式，按端口号 / 进程名直接定位"
+          >
+            <Zap />
+            速查
+          </Button>
+        )}
+
+        {mode === "list" && (
+          <div className="flex items-center gap-2 rounded-[10px] border border-border bg-muted/50 px-3 py-1.5 transition-colors focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px] focus-within:shadow-primary/15">
           <Search className="size-3.5 shrink-0 text-muted-foreground" />
           <input
             data-search
@@ -105,7 +135,8 @@ export default function TopBar({
               </button>
             </>
           )}
-        </div>
+          </div>
+        )}
 
         <label className="flex cursor-pointer items-center gap-2 text-xs text-muted-foreground">
           <Switch

@@ -14,9 +14,17 @@ import KillDialog from "@/ports/KillDialog";
 import { useKill } from "@/ports/kill";
 import ListSkeleton from "@/ports/ListSkeleton";
 import PortTable from "@/ports/PortTable";
+import QueryLanding from "@/ports/QueryLanding";
 import ScanTime from "@/ports/ScanTime";
 import { filterEntries, summarize, usePortScan } from "@/ports/scan";
 import { useTheme } from "@/providers/theme";
+import type { ViewMode } from "@/components/TopBar";
+
+const MODE_KEY = "pk.mode";
+
+function readMode(): ViewMode {
+  return localStorage.getItem(MODE_KEY) === "list" ? "list" : "query";
+}
 
 /**
  * 页面骨架：领域模块（ports / elevation / appearance）在此拼装，
@@ -27,6 +35,12 @@ export default function App() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [elevConfirmOpen, setElevConfirmOpen] = useState(false);
+  /** 速查（首页）= 搜索优先；列表 = 浏览全部。记忆上次选择 */
+  const [mode, setMode] = useState<ViewMode>(readMode);
+
+  useEffect(() => {
+    localStorage.setItem(MODE_KEY, mode);
+  }, [mode]);
 
   const { resolved } = useTheme();
   const { entries, refreshing, refresh, loaded, lastScanAt } = usePortScan();
@@ -69,6 +83,8 @@ export default function App() {
       <BackgroundLayer url={bgUrl} />
 
       <TopBar
+        mode={mode}
+        onMode={setMode}
         keyword={keyword}
         onKeyword={setKeyword}
         matchCount={visibleEntries.length}
@@ -86,36 +102,69 @@ export default function App() {
       )}
 
       <main className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
-        {/* 有背景图时列表垫一张不透明卡片，保证可读性 */}
-        <div
-          className={
-            bgUrl
-              ? "rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
-              : ""
-          }
-        >
-          {!loaded ? (
-            <ListSkeleton />
-          ) : visibleEntries.length > 0 ? (
-            <PortTable
-              entries={visibleEntries}
-              expanded={expanded}
-              onToggle={toggle}
-              killing={kill.killing}
-              results={kill.results}
-              onKill={kill.setTarget}
-            />
-          ) : (
-            <div className="grid place-items-center py-24 text-muted-foreground">
-              <div className="text-5xl">{keyword ? "🔍" : "🎉"}</div>
-              <p className="mt-3 text-sm">
-                {keyword
-                  ? "没有匹配的端口占用（Esc 清空搜索）"
-                  : "当前没有端口被占用"}
-              </p>
-            </div>
-          )}
-        </div>
+        {mode === "query" ? (
+          <QueryLanding
+            keyword={keyword}
+            onKeyword={setKeyword}
+            loaded={loaded}
+            stats={stats}
+            matchCount={visibleEntries.length}
+            bgSet={bgUrl !== null}
+            onBrowseAll={() => setMode("list")}
+            results={
+              <>
+                {visibleEntries.length > 0 ? (
+                  <PortTable
+                    entries={visibleEntries}
+                    expanded={expanded}
+                    onToggle={toggle}
+                    killing={kill.killing}
+                    results={kill.results}
+                    onKill={kill.setTarget}
+                  />
+                ) : (
+                  <div className="grid place-items-center py-16 text-muted-foreground">
+                    <div className="text-4xl">🔍</div>
+                    <p className="mt-3 text-sm">
+                      没有匹配的端口占用（Esc 清空搜索）
+                    </p>
+                  </div>
+                )}
+              </>
+            }
+          />
+        ) : (
+          /* 有背景图时列表垫一张不透明卡片，保证可读性 */
+          <div
+            className={
+              bgUrl
+                ? "rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
+                : ""
+            }
+          >
+            {!loaded ? (
+              <ListSkeleton />
+            ) : visibleEntries.length > 0 ? (
+              <PortTable
+                entries={visibleEntries}
+                expanded={expanded}
+                onToggle={toggle}
+                killing={kill.killing}
+                results={kill.results}
+                onKill={kill.setTarget}
+              />
+            ) : (
+              <div className="grid place-items-center py-24 text-muted-foreground">
+                <div className="text-5xl">{keyword ? "🔍" : "🎉"}</div>
+                <p className="mt-3 text-sm">
+                  {keyword
+                    ? "没有匹配的端口占用（Esc 清空搜索）"
+                    : "当前没有端口被占用"}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       <footer className="flex items-center justify-between border-t border-border bg-card/40 px-5 py-2 text-[11.5px] text-muted-foreground backdrop-blur-xl">
