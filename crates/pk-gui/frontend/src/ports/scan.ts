@@ -61,6 +61,18 @@ export function filterEntries(
   });
 }
 
+/**
+ * 纯数字关键字超出端口范围时给出提示文案，用于区分
+ * "查了但端口本身非法"与"合法端口确实没被占用"；其余输入返回 null。
+ */
+export function portRangeHint(keyword: string): string | null {
+  const k = keyword.trim();
+  if (!/^\d+$/.test(k)) return null;
+  const n = Number(k);
+  if (n < 1 || n > 65535) return `端口号范围是 1-65535，${k} 不是有效端口`;
+  return null;
+}
+
 /** 列表统计（页脚 / 提权横幅用）。 */
 export function summarize(entries: PortEntryDto[]) {
   const pids = new Set(

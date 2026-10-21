@@ -17,7 +17,7 @@ import ListSkeleton from "@/ports/ListSkeleton";
 import PortTable from "@/ports/PortTable";
 import QueryLanding from "@/ports/QueryLanding";
 import ScanTime from "@/ports/ScanTime";
-import { filterEntries, summarize, usePortScan } from "@/ports/scan";
+import { filterEntries, portRangeHint, summarize, usePortScan } from "@/ports/scan";
 import type { ViewMode } from "@/components/TopBar";
 
 const MODE_KEY = "pk.mode";
@@ -166,9 +166,9 @@ export default function App() {
                   )}
                 </div>
                 <p className="text-sm">
-                  {keyword ? "没有匹配的端口占用" : "当前没有端口被占用"}
+                  {portRangeHint(keyword) ?? (keyword ? "没有匹配的端口占用" : "当前没有端口被占用")}
                 </p>
-                {keyword && (
+                {keyword && !portRangeHint(keyword) && (
                   <p className="text-xs text-muted-foreground/70">
                     试试端口号（如 3000）、进程名或用户，Esc 清空搜索
                   </p>

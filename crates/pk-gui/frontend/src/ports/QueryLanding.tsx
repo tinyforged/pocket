@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
+import { portRangeHint } from "@/ports/scan";
 
 interface QueryLandingProps {
   keyword: string;
@@ -157,9 +158,13 @@ export default function QueryLanding({
       {keyword ? (
         <>
           <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
-            <span>
-              找到 <b className="font-mono text-foreground">{matchCount}</b> 条匹配
-            </span>
+            {portRangeHint(keyword) ? (
+              <span className="text-warn">{portRangeHint(keyword)}</span>
+            ) : (
+              <span>
+                找到 <b className="font-mono text-foreground">{matchCount}</b> 条匹配
+              </span>
+            )}
             <button
               type="button"
               onClick={onBrowseAll}
