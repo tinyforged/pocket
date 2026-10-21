@@ -11,6 +11,8 @@ export interface ProcessDto {
   cwd: string | null;
   startTime: number;
   parent: number | null;
+  /** 常驻内存（字节，RSS） */
+  memory: number;
   risk: RiskLevel;
 }
 

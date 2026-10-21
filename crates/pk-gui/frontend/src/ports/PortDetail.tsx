@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import type { PortEntryDto } from "@/api/types";
+import { fmtBytes } from "@/lib/format";
 
 /** 行内详情：exe / cwd / 命令行 / 父进程 + 复制等效 kill 命令。 */
 export default function PortDetail({ entry: e }: { entry: PortEntryDto }) {
@@ -22,6 +23,7 @@ export default function PortDetail({ entry: e }: { entry: PortEntryDto }) {
     ["cwd", p.cwd],
     ["cmd", p.cmd.length ? p.cmd.join(" ") : null],
     ["ppid", p.parent != null ? String(p.parent) : null],
+    ["mem", fmtBytes(p.memory)],
   ].filter(([, v]) => v != null) as [string, string][];
 
   return (

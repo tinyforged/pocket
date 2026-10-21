@@ -25,6 +25,8 @@ pub struct ProcessInfo {
     pub start_time: u64,
     /// 父进程 pid：进程树 / 定位"谁拉起的它"
     pub parent: Option<u32>,
+    /// 常驻内存（字节，RSS）：帮判断"哪个进程值得动"
+    pub memory: u64,
 }
 
 impl fmt::Display for ProcessInfo {
@@ -222,6 +224,7 @@ mod tests {
             cwd: None,
             start_time: 0,
             parent: None,
+            memory: 0,
         }
     }
 

@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ChevronRight, Loader } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronRight, Layers, Loader, ZapOff } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 import type { RowResult } from "./kill";
+import { fmtBytes } from "@/lib/format";
 import PortDetail from "./PortDetail";
 
 /** 列布局（骨架屏也用） */
@@ -30,6 +31,8 @@ interface PortTableProps {
   killing: Set<number>;
   results: Map<number, RowResult>;
   onKill: (process: ProcessDto) => void;
+  /** 多进程共用同一端口时的"全部终止"入口 */
+  onKillGroup: (processes: ProcessDto[]) => void;
 }
 
 export default function PortTable({
@@ -39,6 +42,7 @@ export default function PortTable({
   killing,
   results,
   onKill,
+  onKillGroup,
 }: PortTableProps) {
   // 排序仅重排显示，不影响 App 层的过滤与统计
   const [sort, setSort] = useState<Sort | null>(null);
@@ -63,6 +67,31 @@ export default function PortTable({
     });
   }, [entries, sort]);
 
+  // 多进程共用同一端口（SO_REUSEPORT，或同 pid 多地址算 1 个进程）：
+  // 按 (port, protocol) 聚合去重 pid，≥2 才出"全部终止"组条
+  const groups = useMemo(() => {
+    const m = new Map<string, ProcessDto[]>();
+    for (const e of entries) {
+      const p = e.process;
+      if (!p) continue;
+      const key = `${e.port}/${e.protocol}`;
+      const arr = m.get(key) ?? [];
+      if (!arr.some((x) => x.pid === p.pid)) arr.push(p);
+      m.set(key, arr);
+    }
+    return new Map([...m].filter(([, ps]) => ps.length >= 2));
+  }, [entries]);
+
+  // 排序后每组的首次出现位置，组条插在那儿
+  const groupFirstIdx = useMemo(() => {
+    const first = new Map<string, number>();
+    sorted.forEach((e, i) => {
+      const key = `${e.port}/${e.protocol}`;
+      if (!first.has(key)) first.set(key, i);
+    });
+    return first;
+  }, [sorted]);
+
   return (
     <div className="flex flex-col gap-0.5">
       <div
@@ -81,16 +110,44 @@ export default function PortTable({
         const base = rowKey(e);
         const dup = sorted.slice(0, i).filter((x) => rowKey(x) === base).length;
         const key = dup === 0 ? base : `${base}~${dup}`;
+        // 多进程组条：只在组内首行上方渲染一次
+        const gk = `${e.port}/${e.protocol}`;
+        const group = groups.get(gk);
+        const showBar = group != null && groupFirstIdx.get(gk) === i;
+        const groupBusy = group?.some((x) => killing.has(x.pid)) ?? false;
         return (
-          <PortRow
-            key={key}
-            entry={e}
-            open={expanded.has(key)}
-            onToggle={() => onToggle(key)}
-            killing={killing.has(e.process?.pid ?? -1)}
-            result={e.process ? results.get(e.process.pid) : undefined}
-            onKill={onKill}
-          />
+          <Fragment key={key}>
+            {showBar && group && (
+              <div className="mb-1 mt-2 flex items-center justify-between gap-3 rounded-[10px] border border-primary/25 bg-primary/5 px-3 py-1.5 text-xs">
+                <span className="flex min-w-0 items-center gap-1.5 text-muted-foreground">
+                  <Layers className="size-3.5 shrink-0 text-primary" />
+                  端口 <b className="font-mono text-foreground">{e.port}</b> 被{" "}
+                  {group.length} 个进程共用（可逐个终止，或）
+                </span>
+                <Button
+                  size="xs"
+                  variant="dangerGhost"
+                  disabled={groupBusy}
+                  onClick={() => onKillGroup(group)}
+                >
+                  {groupBusy ? (
+                    <Loader className="animate-spin" />
+                  ) : (
+                    <ZapOff />
+                  )}
+                  全部终止
+                </Button>
+              </div>
+            )}
+            <PortRow
+              entry={e}
+              open={expanded.has(key)}
+              onToggle={() => onToggle(key)}
+              killing={killing.has(e.process?.pid ?? -1)}
+              result={e.process ? results.get(e.process.pid) : undefined}
+              onKill={onKill}
+            />
+          </Fragment>
         );
       })}
     </div>
@@ -204,6 +261,14 @@ function PortRow({
                 pid {p.pid}
                 {p.user ? ` · ${p.user}` : ""}
               </span>
+              {p.memory > 0 && (
+                <span
+                  title="常驻内存（RSS）"
+                  className="font-mono text-[11.5px] text-muted-foreground/70"
+                >
+                  {fmtBytes(p.memory)}
+                </span>
+              )}
               {p.risk === "critical" && (
                 <Badge variant="crit">⚠ 受保护</Badge>
               )}

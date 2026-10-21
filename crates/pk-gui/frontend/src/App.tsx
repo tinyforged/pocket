@@ -120,7 +120,8 @@ export default function App() {
                     onToggle={toggle}
                     killing={kill.killing}
                     results={kill.results}
-                    onKill={kill.setTarget}
+                    onKill={(p) => kill.setPending([p])}
+                    onKillGroup={(ps) => kill.setPending(ps)}
                   />
                 ) : (
                   <div className="grid place-items-center gap-3 py-16 text-muted-foreground">
@@ -154,7 +155,8 @@ export default function App() {
                 onToggle={toggle}
                 killing={kill.killing}
                 results={kill.results}
-                onKill={kill.setTarget}
+                onKill={(p) => kill.setPending([p])}
+                onKillGroup={(ps) => kill.setPending(ps)}
               />
             ) : (
               <div className="grid place-items-center gap-3 py-24 text-muted-foreground">
@@ -191,9 +193,9 @@ export default function App() {
       </footer>
 
       <KillDialog
-        target={kill.target}
-        onClose={() => kill.setTarget(null)}
-        onConfirm={(p, force) => void kill.confirm(p, force)}
+        targets={kill.pending}
+        onClose={() => kill.setPending(null)}
+        onConfirm={(ps, force) => void kill.confirm(ps, force)}
       />
 
       <SettingsDialog

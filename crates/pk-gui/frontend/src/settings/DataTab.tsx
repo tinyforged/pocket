@@ -8,13 +8,10 @@ import { changeStorageDir, getStorageInfo } from "@/api/storage";
 import type { StorageInfoDto } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { fmtBytes } from "@/lib/format";
 
-function fmt(bytes: number): string {
-  if (bytes <= 0) return "—";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
-}
+/** 空占位与 0 字节统一显示为 —，和"有数据"区分开 */
+const fmt = (bytes: number): string => (bytes > 0 ? fmtBytes(bytes) : "—");
 
 interface DataTabProps {
   /** 移除背景图后通知上层重新读取 */

@@ -130,6 +130,7 @@ fn load_processes(raw: &[RawEntry]) -> HashMap<u32, ProcessInfo> {
                 cwd: proc.cwd().map(|p| p.display().to_string()),
                 start_time: proc.start_time(),
                 parent: proc.parent().map(|p| p.as_u32()),
+                memory: proc.memory(),
             },
         );
     }

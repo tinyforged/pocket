@@ -15,6 +15,8 @@ pub(crate) struct ProcessDto {
     pub cwd: Option<String>,
     pub start_time: u64,
     pub parent: Option<u32>,
+    /// 常驻内存（字节）
+    pub memory: u64,
     /// "safe" / "caution" / "critical"，前端据此渲染徽章与确认流程
     pub risk: &'static str,
 }
@@ -41,6 +43,7 @@ pub(crate) fn process_dto(p: &ProcessInfo) -> ProcessDto {
         cwd: p.cwd.clone(),
         start_time: p.start_time,
         parent: p.parent,
+        memory: p.memory,
         risk: match p.risk() {
             RiskLevel::Safe => "safe",
             RiskLevel::Caution => "caution",
@@ -101,6 +104,7 @@ mod tests {
             cwd: None,
             start_time: 0,
             parent: None,
+            memory: 0,
         }
     }
 
