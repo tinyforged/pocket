@@ -72,3 +72,21 @@
     把操作权还给终端。
 - 后果：交互多一步，但与误杀代价相比可忽略；TUI / GUI 出现时沿用同一
   `RiskLevel` 分级，策略只写一次。
+
+## ADR-006：GUI 选型 Tauri 2 + 无 node 静态前端
+
+- 状态：已接受（2026-10-21）
+- 背景：设计文档候选 Tauri / egui，要求"高颜值"。egui 自带字体没有
+  CJK 字形，而 macOS / Windows 的系统中文字体几乎都是 `.ttc` 集合，
+  egui 的字体引擎（ab_glyph）不支持，意味着必须内嵌十几 MB 字体或
+  运行时找 `.ttf`；Tauri 走系统 WebView，中文渲染与全套字体能力免费
+  获得，CSS 的表现力就是"颜值"的上限。
+- 决策：Tauri 2，前端为 `pk-gui/dist/` 下的原生 HTML/CSS/JS（无 node、
+  无打包器），通过 `withGlobalTauri` + `window.__TAURI__.core.invoke`
+  调用命令；命令层（`pk-gui/src/main.rs`）只做 pk-core 能力暴露与
+  DTO 适配，core 一行不动，铁律不破。终止策略与 CLI 一致：单进程
+  确认即杀，Critical 红色二次确认（勾选知晓风险才可点），服务端杀前
+  重扫并执行同一份受保护名单闸。
+- 后果：改前端需重新编译（无热载，`cargo run -p pk-gui` 即可）；
+  Linux CI 需安装 webkit2gtk 系统依赖；工作区依赖树显著变大
+  （tauri 全家桶），但只落在 `pk-gui`，core / cli 不受影响。

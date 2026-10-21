@@ -7,9 +7,10 @@
 ```text
 crates/pk-core   # 纯逻辑：扫描 / 进程终止，不依赖任何 UI 库
 crates/pk-cli    # 二进制 pk
+crates/pk-gui    # 端口终结者 GUI（Tauri 2 + 静态前端）
 ```
 
-依赖方向：`pk-cli`（及未来的 `pk-tui` / `pk-gui`）→ `pk-core`，永远单向。
+依赖方向：`pk-cli` / `pk-gui` → `pk-core`，永远单向。
 
 ## 命令
 
@@ -33,13 +34,14 @@ pk port kill 8080   # 终止占用进程：SIGTERM → 3s 宽限 → SIGKILL
 cargo fmt
 cargo clippy --all-targets -- -D warnings
 cargo test --all
+cargo run -p pk-gui   # 启动端口终结者 GUI（改前端需重新编译，无热载）
 ```
 
 提交遵循 Conventional Commits（`feat:` / `fix:` / `refactor:`），trunk-based，直推 `main`。
 
 ## 路线图（触发线到了才做）
 
-- `pk-tui` / `pk-gui`：core 稳定、CLI 天天在用之后
+- `pk-tui`：CLI 天天在用、且终端场景确实高频之后再立项（GUI 已先行落地）
 - 插件 / 子命令注册机制：有第 3 个工具时
 - crates.io 发布：有外部用户时
 
