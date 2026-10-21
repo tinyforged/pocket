@@ -71,7 +71,7 @@ export default function TopBar({
           <Zap className="size-5 text-primary" strokeWidth={2.2} />
         </div>
         <div>
-          <h1 className="text-[17px] font-bold tracking-wide">让开！</h1>
+          <h1 className="text-[17px] font-bold tracking-wide">端口终结者</h1>
           <p className="mt-0.5 text-xs text-muted-foreground">
             pk · 谁占了端口，一眼看清，一键送走
           </p>

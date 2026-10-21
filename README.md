@@ -7,7 +7,7 @@
 ```text
 crates/pk-core   # 纯逻辑：扫描 / 进程终止，不依赖任何 UI 库
 crates/pk-cli    # 二进制 pk
-crates/pk-gui    # 让开！ GUI（Tauri 2 + 静态前端）
+crates/pk-gui    # 端口终结者 GUI（Tauri 2 + 静态前端）
 ```
 
 依赖方向：`pk-cli` / `pk-gui` → `pk-core`，永远单向。

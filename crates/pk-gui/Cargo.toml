@@ -1,6 +1,6 @@
 [package]
 name = "pk-gui"
-description = "让开！ GUI：Tauri 2 + Vite/React 前端，逻辑全部来自 pk-core"
+description = "端口终结者 GUI：Tauri 2 + Vite/React 前端，逻辑全部来自 pk-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
