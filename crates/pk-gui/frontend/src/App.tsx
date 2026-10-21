@@ -1,7 +1,7 @@
 import { Loader, PartyPopper, SearchX } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Toaster } from "sonner";
 
+import AppToaster from "@/components/AppToaster";
 import SettingsDialog from "@/settings/SettingsDialog";
 import BackgroundLayer from "@/appearance/BackgroundLayer";
 import { useAppearanceSync } from "@/appearance/useAppearanceSync";
@@ -18,7 +18,6 @@ import PortTable from "@/ports/PortTable";
 import QueryLanding from "@/ports/QueryLanding";
 import ScanTime from "@/ports/ScanTime";
 import { filterEntries, summarize, usePortScan } from "@/ports/scan";
-import { useTheme } from "@/providers/theme";
 import type { ViewMode } from "@/components/TopBar";
 
 const MODE_KEY = "pk.mode";
@@ -44,7 +43,6 @@ export default function App() {
     localStorage.setItem(MODE_KEY, mode);
   }, [mode]);
 
-  const { resolved } = useTheme();
   const { entries, refreshing, refresh, loaded, lastScanAt } = usePortScan();
   const kill = useKill(refresh);
   const elevated = useElevation();
@@ -210,12 +208,7 @@ export default function App() {
 
       <RelaunchDialog open={elevConfirmOpen} onOpenChange={setElevConfirmOpen} />
 
-      <Toaster
-        theme={resolved}
-        richColors
-        position="bottom-center"
-        toastOptions={{ style: { userSelect: "none" } }}
-      />
+      <AppToaster />
     </div>
   );
 }
