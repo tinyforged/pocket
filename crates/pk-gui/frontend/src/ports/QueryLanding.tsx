@@ -26,6 +26,20 @@ interface QueryLandingProps {
   results: ReactNode;
 }
 
+/** 常用端口速达：点击即搜，悬停看服务名。 */
+const COMMON_PORTS: Array<{ port: number; label: string }> = [
+  { port: 80, label: "HTTP" },
+  { port: 443, label: "HTTPS" },
+  { port: 3000, label: "Node / React 开发服务器" },
+  { port: 3306, label: "MySQL" },
+  { port: 5000, label: "Flask" },
+  { port: 5432, label: "PostgreSQL" },
+  { port: 6379, label: "Redis" },
+  { port: 8080, label: "代理 / 备用 HTTP" },
+  { port: 8888, label: "Jupyter" },
+  { port: 27017, label: "MongoDB" },
+];
+
 /** 概览小胶囊：图标 + 指标名 + 等宽数字。 */
 function StatChip({
   icon: Icon,
@@ -120,6 +134,26 @@ export default function QueryLanding({
         </div>
       </div>
 
+      {/* 常用端口速达：只在空态出现，点了直接当搜索词 */}
+      {!keyword && (
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-1.5">
+          <span className="mr-0.5 text-[11px] text-muted-foreground/80">
+            常用端口
+          </span>
+          {COMMON_PORTS.map(({ port, label }) => (
+            <button
+              key={port}
+              type="button"
+              title={label}
+              onClick={() => onKeyword(String(port))}
+              className="cursor-pointer rounded-full border border-border bg-card/70 px-2.5 py-1 font-mono text-[11px] text-muted-foreground backdrop-blur-sm transition-colors hover:border-primary/50 hover:text-primary"
+            >
+              {port}
+            </button>
+          ))}
+        </div>
+      )}
+
       {keyword ? (
         <>
           <div className="mt-5 flex items-center justify-between text-xs text-muted-foreground">
@@ -137,7 +171,7 @@ export default function QueryLanding({
           <div className="mt-3 animate-in fade-in duration-300">{results}</div>
         </>
       ) : (
-        <div className="mt-7 flex flex-wrap items-center justify-center gap-2">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
           {!loaded ? (
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
               <Loader className="size-3 animate-spin" />
