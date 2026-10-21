@@ -11,8 +11,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { useSettings } from "@/settings";
-import { useTheme, type ThemePreference } from "@/theme";
+import { useSettings } from "@/providers/settings";
+import { useTheme, type ThemePreference } from "@/providers/theme";
 
 interface TopBarProps {
   keyword: string;
@@ -32,6 +32,7 @@ const THEME_META: Record<
   dark: { icon: Moon, label: "暗色" },
 };
 
+/** 应用顶栏：品牌 / 搜索 / 刷新与外观入口（跨领域的应用级组件）。 */
 export default function TopBar({
   keyword,
   onKeyword,
@@ -53,7 +54,7 @@ export default function TopBar({
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-card/40 px-5 py-3.5 backdrop-blur-xl">
       <div className="flex items-center gap-3">
-        <div className="grid size-10 place-items-center rounded-xl border border-primary/35 bg-gradient-to-br from-primary/30 to-primary/5 shadow-[0_0_24px_var(--glow-1)]">
+        <div className="grid size-10 place-items-center rounded-xl border border-primary/35 bg-linear-to-br from-primary/30 to-primary/5 shadow-[0_0_24px_var(--glow-1)]">
           <Zap className="size-5 text-primary" strokeWidth={2.2} />
         </div>
         <div>

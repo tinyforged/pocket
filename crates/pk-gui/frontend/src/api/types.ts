@@ -1,4 +1,4 @@
-/** 与 pk-gui/src/main.rs 的 DTO 一一对应（serde rename_all = "camelCase"）。 */
+/** 与 pk-gui/src/dto.rs 的 DTO 一一对应（serde rename_all = "camelCase"）。 */
 
 export type RiskLevel = "safe" | "caution" | "critical";
 

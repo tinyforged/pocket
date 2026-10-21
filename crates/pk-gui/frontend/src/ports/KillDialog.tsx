@@ -1,6 +1,7 @@
 import { ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import type { ProcessDto } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -11,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { ProcessDto } from "@/types";
 
 interface KillDialogProps {
   /** 待终止的进程；非 null 时打开 */

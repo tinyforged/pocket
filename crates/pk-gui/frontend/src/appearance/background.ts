@@ -4,9 +4,7 @@
  */
 import type { CSSProperties } from "react";
 
-import type { BgSettings } from "@/settings";
-
-export type { BgFit } from "@/settings";
+import type { BgSettings } from "@/providers/settings";
 
 /** 显示方式 → CSS background 属性片段 */
 const FIT: Record<BgSettings["fit"], { size: string; repeat: string }> = {

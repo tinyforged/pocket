@@ -1,7 +1,7 @@
 /**
- * 应用设置：外观（主题 / 主题色 / 背景图参数）、窗口与托盘、刷新策略。
- * 存 localStorage("pk.settings")；需要 Rust 侧配合的（托盘、关闭行为、
- * 背景图本体）由 App 在设置变化时同步过去。
+ * 应用设置：外观（主题色 / 背景图参数）、窗口与托盘、刷新策略。
+ * 存 localStorage("pk.settings")；需要 Rust 侧配合的部分由
+ * appearance/useAppearanceSync 在设置变化时同步过去。
  */
 import {
   createContext,
@@ -12,7 +12,7 @@ import {
   type ReactNode,
 } from "react";
 
-import type { AccentKey } from "@/accent";
+import type { AccentKey } from "@/appearance/accents";
 
 /** 背景图显示方式 */
 export type BgFit = "fill" | "fit" | "stretch" | "center" | "tile";
