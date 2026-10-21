@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { describeError, writeFrontendLog } from "@/api/logging";
 import { checkUpdate, installUpdate, relaunchApp } from "@/updater/update";
 
 /** 关于：版本、在线更新与终止策略说明。 */
@@ -19,17 +20,33 @@ export default function AboutTab() {
   const [upToDate, setUpToDate] = useState(false);
 
   useEffect(() => {
-    void getVersion().then(setVersion).catch(() => setVersion("?"));
+    void getVersion()
+      .then(setVersion)
+      .catch((error: unknown) => {
+        setVersion("?");
+        void writeFrontendLog("warn", `读取应用版本失败：${describeError(error)}`);
+      });
   }, []);
 
   async function onCheck() {
     setChecking(true);
     setUpToDate(false);
+    setUpdate(null);
+    await writeFrontendLog("info", `检查更新开始（当前版本 v${version}）`);
     try {
       const found = await checkUpdate();
       setUpdate(found);
       setUpToDate(!found);
+      if (found) {
+        await writeFrontendLog(
+          "info",
+          `检查更新完成：发现新版本 v${found.version}（当前 v${version}）`,
+        );
+      } else {
+        await writeFrontendLog("info", `检查更新完成：当前 v${version} 已是最新版本`);
+      }
     } catch (e) {
+      await writeFrontendLog("error", `检查更新失败：${describeError(e)}`);
       toast.error(`检查更新失败：${e}`);
     } finally {
       setChecking(false);
@@ -40,14 +57,30 @@ export default function AboutTab() {
     if (!update) return;
     setDownloading(true);
     setProgress(null);
+    await writeFrontendLog("info", `开始下载并安装 v${update.version}`);
     try {
       await installUpdate(update, setProgress);
       setInstalled(true);
+      await writeFrontendLog("info", `v${update.version} 已安装，等待重启生效`);
       toast.success("新版本已安装，重启后生效");
     } catch (e) {
+      await writeFrontendLog(
+        "error",
+        `下载或安装 v${update.version} 失败：${describeError(e)}`,
+      );
       toast.error(`下载或安装失败：${e}`);
     } finally {
       setDownloading(false);
+    }
+  }
+
+  async function onRelaunch() {
+    await writeFrontendLog("info", "用户请求重启应用以启用更新");
+    try {
+      await relaunchApp();
+    } catch (error) {
+      await writeFrontendLog("error", `重启应用失败：${describeError(error)}`);
+      toast.error(`重启失败：${error}`);
     }
   }
 
@@ -80,7 +113,7 @@ export default function AboutTab() {
                 </p>
               ) : null}
               {installed ? (
-                <Button size="sm" onClick={() => void relaunchApp()}>
+                <Button size="sm" onClick={() => void onRelaunch()}>
                   <RotateCcw className="size-4" />
                   重启生效
                 </Button>

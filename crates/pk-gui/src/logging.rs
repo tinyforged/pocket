@@ -108,6 +108,26 @@ pub fn error(message: impl Into<String>) {
     log("error", message.into());
 }
 
+/// Frontend action logs share the same ring buffer, file and live event stream.
+#[tauri::command]
+pub fn write_frontend_log(level: String, mut message: String) -> Result<(), String> {
+    if message.len() > 16_384 {
+        let mut end = 16_384;
+        while !message.is_char_boundary(end) {
+            end -= 1;
+        }
+        message.truncate(end);
+    }
+
+    match level.as_str() {
+        "info" => info(message),
+        "warn" => warn(message),
+        "error" => error(message),
+        _ => return Err(format!("不支持的日志级别：{level}")),
+    }
+    Ok(())
+}
+
 /// 最近 N 条（实时视图的初始数据，之后靠事件增量推送）。
 #[tauri::command]
 pub fn get_recent_logs() -> Vec<LogEntryDto> {

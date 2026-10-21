@@ -3,7 +3,13 @@ import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { clearLogs, exportLogs, getRecentLogs } from "@/api/logging";
+import {
+  clearLogs,
+  describeError,
+  exportLogs,
+  getRecentLogs,
+  writeFrontendLog,
+} from "@/api/logging";
 import type { LogEntryDto } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -24,6 +30,9 @@ const FILTER_MATCH: Record<Filter, (l: LogEntryDto["level"]) => boolean> = {
   错误: (l) => l === "error",
 };
 
+const logKey = (entry: LogEntryDto) =>
+  `${entry.time}\0${entry.level}\0${entry.message}`;
+
 interface LogDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -39,12 +48,53 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
   // 打开时取存量 + 订阅实时事件
   useEffect(() => {
     if (!open) return;
-    void getRecentLogs().then(setLogs);
-    const un = listen<LogEntryDto>("pk://log", (e) =>
-      setLogs((prev) => [...prev.slice(-999), e.payload]),
-    );
+    let active = true;
+    let initialLoaded = false;
+    const incoming: LogEntryDto[] = [];
+    let unlisten: (() => void) | undefined;
+
+    const receive = (entry: LogEntryDto) => {
+      if (!initialLoaded) {
+        incoming.push(entry);
+        return;
+      }
+      setLogs((prev) => [...prev.slice(-999), entry]);
+    };
+
+    void (async () => {
+      try {
+        const stop = await listen<LogEntryDto>("pk://log", (event) =>
+          receive(event.payload),
+        );
+        if (!active) {
+          stop();
+          return;
+        }
+        unlisten = stop;
+      } catch (error) {
+        if (active) toast.error(`订阅实时日志失败：${error}`);
+      }
+
+      try {
+        const recent = await getRecentLogs();
+        if (!active) return;
+        const known = new Set(recent.map(logKey));
+        setLogs(
+          [...recent, ...incoming.filter((entry) => !known.has(logKey(entry)))].slice(-1000),
+        );
+        initialLoaded = true;
+      } catch (error) {
+        if (active) {
+          setLogs(incoming.slice(-1000));
+          toast.error(`读取日志失败：${error}`);
+        }
+        initialLoaded = true;
+      }
+    })();
+
     return () => {
-      void un.then((f) => f());
+      active = false;
+      unlisten?.();
     };
   }, [open]);
 
@@ -56,10 +106,15 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
   }, [visible.length, follow, open]);
 
   const exportAll = async () => {
+    await writeFrontendLog("info", "开始导出应用日志");
     try {
       const path = await exportLogs();
-      if (path) toast.success(`日志已导出：${path}`);
+      if (path) {
+        await writeFrontendLog("info", `日志已导出：${path}`);
+        toast.success(`日志已导出：${path}`);
+      }
     } catch (e) {
+      await writeFrontendLog("error", `导出日志失败：${describeError(e)}`);
       toast.error(`导出失败：${e}`);
     }
   };
@@ -70,6 +125,7 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
       setLogs([]);
       toast.success("日志已清空");
     } catch (e) {
+      await writeFrontendLog("error", `清空日志失败：${describeError(e)}`);
       toast.error(String(e));
     }
   };

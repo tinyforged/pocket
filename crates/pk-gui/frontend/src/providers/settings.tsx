@@ -12,7 +12,8 @@ import {
   type ReactNode,
 } from "react";
 
-import type { AccentKey } from "@/appearance/accents";
+import { ACCENTS, type AccentKey } from "@/appearance/accents";
+import { writeFrontendLog } from "@/api/logging";
 
 /** 背景图显示方式 */
 export type BgFit = "fill" | "fit" | "stretch" | "center" | "tile";
@@ -110,8 +111,23 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   }, [settings]);
 
   const update = useCallback((patch: Partial<Settings>) => {
+    const changes: string[] = [];
+    if (patch.autoRefresh !== undefined && patch.autoRefresh !== settings.autoRefresh)
+      changes.push(`自动刷新${patch.autoRefresh ? "开启" : "关闭"}`);
+    if (patch.intervalMs !== undefined && patch.intervalMs !== settings.intervalMs)
+      changes.push(`刷新间隔调整为 ${patch.intervalMs / 1000} 秒`);
+    if (patch.accent !== undefined && patch.accent !== settings.accent)
+      changes.push(`主题色调整为${ACCENTS[patch.accent].label}`);
+    if (patch.showTrayIcon !== undefined && patch.showTrayIcon !== settings.showTrayIcon)
+      changes.push(`系统托盘图标${patch.showTrayIcon ? "显示" : "隐藏"}`);
+    if (patch.closeToQuit !== undefined && patch.closeToQuit !== settings.closeToQuit)
+      changes.push(`关闭窗口时${patch.closeToQuit ? "退出程序" : "隐藏到托盘"}`);
+
     setSettings((prev) => ({ ...prev, ...patch }));
-  }, []);
+    if (changes.length > 0) {
+      void writeFrontendLog("info", `设置变更：${changes.join("；")}`);
+    }
+  }, [settings]);
 
   return (
     <SettingsContext.Provider value={{ settings, update }}>

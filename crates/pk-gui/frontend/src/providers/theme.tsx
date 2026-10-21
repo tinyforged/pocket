@@ -13,6 +13,8 @@ import {
   type ReactNode,
 } from "react";
 
+import { writeFrontendLog } from "@/api/logging";
+
 export type ThemePreference = "system" | "light" | "dark";
 type ResolvedTheme = "light" | "dark";
 
@@ -64,9 +66,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [preference]);
 
   const setPreference = useCallback((t: ThemePreference) => {
+    if (t === preference) return;
     localStorage.setItem(STORAGE_KEY, t);
     setPreferenceState(t);
-  }, []);
+    const label = t === "system" ? "跟随系统" : t === "light" ? "亮色" : "暗色";
+    void writeFrontendLog("info", `主题模式调整为${label}`);
+  }, [preference]);
 
   return (
     <ThemeContext.Provider value={{ preference, resolved, setPreference }}>

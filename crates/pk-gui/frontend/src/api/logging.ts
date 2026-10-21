@@ -17,3 +17,27 @@ export function exportLogs(): Promise<string | null> {
 export function clearLogs(): Promise<void> {
   return invoke("clear_logs");
 }
+
+/** Write frontend operation logs into the same native log stream as Rust actions. */
+export async function writeFrontendLog(
+  level: LogEntryDto["level"],
+  message: string,
+): Promise<void> {
+  try {
+    await invoke("write_frontend_log", { level, message });
+  } catch (error) {
+    // Logging must never replace the original operation error.
+    console.error("写入应用日志失败", error);
+  }
+}
+
+/** Preserve useful details for plugin errors, including the stack when available. */
+export function describeError(error: unknown): string {
+  if (error instanceof Error) return error.stack ?? `${error.name}: ${error.message}`;
+  if (typeof error === "string") return error;
+  try {
+    return JSON.stringify(error) ?? String(error);
+  } catch {
+    return String(error);
+  }
+}

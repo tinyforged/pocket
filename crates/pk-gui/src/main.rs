@@ -57,7 +57,8 @@ fn main() {
             storage::change_storage_dir,
             logging::get_recent_logs,
             logging::export_logs,
-            logging::clear_logs
+            logging::clear_logs,
+            logging::write_frontend_log
         ])
         .run(tauri::generate_context!())
         .expect("pk-gui 运行失败");
