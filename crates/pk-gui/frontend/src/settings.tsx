@@ -1,9 +1,7 @@
 /**
- * 应用设置（v1 全部为前端本地设置，存 localStorage("pk.settings")）：
- * - autoRefresh：列表自动刷新开关
- * - intervalMs：自动刷新频率
- * 设置窗口（SettingsDialog）读写这里；后续若出现需要 Rust 侧感知的
- * 设置（如自定义受保护名单），再升级为 tauri 持久化命令。
+ * 应用设置：外观（主题 / 主题色 / 背景图参数）、窗口与托盘、刷新策略。
+ * 存 localStorage("pk.settings")；需要 Rust 侧配合的（托盘、关闭行为、
+ * 背景图本体）由 App 在设置变化时同步过去。
  */
 import {
   createContext,
@@ -14,10 +12,31 @@ import {
   type ReactNode,
 } from "react";
 
+import type { AccentKey } from "@/accent";
+
+/** 背景图显示方式 */
+export type BgFit = "fill" | "fit" | "stretch" | "center" | "tile";
+
+export interface BgSettings {
+  fit: BgFit;
+  /** 图片不透明度 0~1（默认 0.2，保证内容可读） */
+  opacity: number;
+  /** 模糊半径 px */
+  blur: number;
+}
+
 export interface Settings {
   autoRefresh: boolean;
   /** 自动刷新间隔（毫秒） */
   intervalMs: number;
+  /** 配色主题（主题色） */
+  accent: AccentKey;
+  /** 显示系统托盘 / 菜单栏图标 */
+  showTrayIcon: boolean;
+  /** 关闭窗口时退出程序；false = 隐藏到托盘（需托盘开启） */
+  closeToQuit: boolean;
+  /** 背景图参数（图片本体由 Rust 侧存应用数据目录） */
+  bg: BgSettings;
 }
 
 const STORAGE_KEY = "pk.settings";
@@ -31,7 +50,22 @@ export const INTERVAL_OPTIONS = [
   { value: 60000, label: "60 秒" },
 ] as const;
 
-const DEFAULTS: Settings = { autoRefresh: false, intervalMs: 4000 };
+export const BG_FIT_OPTIONS: { value: BgFit; label: string }[] = [
+  { value: "fill", label: "填充" },
+  { value: "fit", label: "适应" },
+  { value: "stretch", label: "拉伸" },
+  { value: "center", label: "居中" },
+  { value: "tile", label: "平铺" },
+];
+
+export const DEFAULTS: Settings = {
+  autoRefresh: false,
+  intervalMs: 4000,
+  accent: "ocean",
+  showTrayIcon: false,
+  closeToQuit: true,
+  bg: { fit: "fill", opacity: 0.2, blur: 0 },
+};
 
 const SettingsContext = createContext<{
   settings: Settings;
@@ -42,7 +76,13 @@ function readStored(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    return { ...DEFAULTS, ...(JSON.parse(raw) as Partial<Settings>) };
+    const parsed = JSON.parse(raw) as Partial<Settings>;
+    // 深合并 bg：旧版本存储没有该字段也能拿到完整默认值
+    return {
+      ...DEFAULTS,
+      ...parsed,
+      bg: { ...DEFAULTS.bg, ...(parsed.bg ?? {}) },
+    };
   } catch {
     return DEFAULTS;
   }

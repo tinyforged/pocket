@@ -177,7 +177,7 @@ function Detail({ entry: e }: { entry: PortEntryDto }) {
 
   if (!p) {
     return (
-      <div className="ml-14 mb-1.5 rounded-r-xl border-l-2 border-primary/50 bg-muted/40 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
+      <div className="ml-14 mb-1.5 rounded-r-xl border-l-2 border-primary/50 bg-muted px-4 py-3 text-xs leading-relaxed text-muted-foreground">
         进程信息不可见：root / 其他用户的进程需要以提权方式运行才能看到
         （右上角"提权重启"，或终端里 <code className="font-mono">sudo pk port</code>）。
       </div>
@@ -192,7 +192,7 @@ function Detail({ entry: e }: { entry: PortEntryDto }) {
   ].filter(([, v]) => v != null) as [string, string][];
 
   return (
-    <div className="ml-14 mb-1.5 flex flex-col items-start gap-1.5 rounded-r-xl border-l-2 border-primary/50 bg-muted/40 px-4 py-3">
+    <div className="ml-14 mb-1.5 flex flex-col items-start gap-1.5 rounded-r-xl border-l-2 border-primary/50 bg-muted px-4 py-3">
       {lines.length === 0 ? (
         <span className="text-xs text-muted-foreground">无更多信息</span>
       ) : (

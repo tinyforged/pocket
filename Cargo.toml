@@ -16,9 +16,11 @@ clap = { version = "4.6", features = ["derive"] }
 sysinfo = "0.39"
 netstat2 = "0.11"
 serde = { version = "1", features = ["derive"] }
-tauri = "2"
+tauri = { version = "2", features = ["tray-icon"] }
 tauri-build = "2"
 libc = "0.2"
+rfd = "0.17"
+base64 = "0.23"
 
 [workspace.lints.rust]
 unsafe_code = "warn"

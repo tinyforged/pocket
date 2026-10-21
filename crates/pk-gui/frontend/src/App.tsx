@@ -5,9 +5,14 @@ import { Toaster, toast } from "sonner";
 import {
   isElevated,
   killProcesses,
+  loadBackgroundImage,
   relaunchElevated,
   scanPorts,
+  setCloseToQuit,
+  setTrayVisible,
 } from "@/api";
+import { applyAccent } from "@/accent";
+import { bgLayerStyle } from "@/bg";
 import ElevationBanner from "@/components/ElevationBanner";
 import KillDialog from "@/components/KillDialog";
 import PortTable, { rowKey, type RowResult } from "@/components/PortTable";
@@ -38,6 +43,7 @@ export default function App() {
   const [elevConfirmOpen, setElevConfirmOpen] = useState(false);
   const [elevated, setElevated] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [bgUrl, setBgUrl] = useState<string | null>(null);
 
   const { settings } = useSettings();
   const { resolved } = useTheme();
@@ -53,10 +59,35 @@ export default function App() {
     }
   }, []);
 
+  /** 重新读取背景图（选择 / 移除 / 恢复默认后由设置窗口调用）。 */
+  const reloadBg = useCallback(async () => {
+    try {
+      setBgUrl(await loadBackgroundImage());
+    } catch {
+      setBgUrl(null);
+    }
+  }, []);
+
   useEffect(() => {
     void refresh();
     void isElevated().then(setElevated, () => setElevated(false));
-  }, [refresh]);
+    void reloadBg();
+  }, [refresh, reloadBg]);
+
+  // 主题色：内联覆盖 --primary，跟随明暗切换取对应档位
+  useEffect(() => {
+    applyAccent(settings.accent, resolved);
+  }, [settings.accent, resolved]);
+
+  // 托盘与关闭行为同步到 Rust 侧；托盘关闭时强制"关闭即退出"，
+  // 否则窗口隐藏后没有任何入口可以唤回
+  useEffect(() => {
+    void setTrayVisible(settings.showTrayIcon).catch(() => {});
+  }, [settings.showTrayIcon]);
+  useEffect(() => {
+    const quit = settings.closeToQuit || !settings.showTrayIcon;
+    void setCloseToQuit(quit).catch(() => {});
+  }, [settings.closeToQuit, settings.showTrayIcon]);
 
   // 自动刷新：开关与频率都来自设置
   useEffect(() => {
@@ -154,6 +185,15 @@ export default function App() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
+      {/* 背景图：垫在内容与光晕之下，卡片 / 对话框保持不透明以保证可读性 */}
+      {bgUrl && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-0 -z-10"
+          style={bgLayerStyle(bgUrl, settings.bg)}
+        />
+      )}
+
       <TopBar
         keyword={keyword}
         onKeyword={setKeyword}
@@ -170,23 +210,32 @@ export default function App() {
       )}
 
       <main className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
-        {visibleEntries.length > 0 ? (
-          <PortTable
-            entries={visibleEntries}
-            expanded={expanded}
-            onToggle={toggle}
-            killing={killing}
-            results={results}
-            onKill={setKillTarget}
-          />
-        ) : (
-          <div className="grid place-items-center py-24 text-muted-foreground">
-            <div className="text-5xl">🎉</div>
-            <p className="mt-3 text-sm">
-              {keyword ? "没有匹配的端口占用" : "当前没有端口被占用"}
-            </p>
-          </div>
-        )}
+        {/* 有背景图时列表垫一张不透明卡片，保证可读性 */}
+        <div
+          className={
+            bgUrl
+              ? "rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
+              : ""
+          }
+        >
+          {visibleEntries.length > 0 ? (
+            <PortTable
+              entries={visibleEntries}
+              expanded={expanded}
+              onToggle={toggle}
+              killing={killing}
+              results={results}
+              onKill={setKillTarget}
+            />
+          ) : (
+            <div className="grid place-items-center py-24 text-muted-foreground">
+              <div className="text-5xl">🎉</div>
+              <p className="mt-3 text-sm">
+                {keyword ? "没有匹配的端口占用" : "当前没有端口被占用"}
+              </p>
+            </div>
+          )}
+        </div>
       </main>
 
       <footer className="flex items-center justify-between border-t border-border bg-card/40 px-5 py-2 text-[11.5px] text-muted-foreground backdrop-blur-xl">
@@ -204,7 +253,12 @@ export default function App() {
         onConfirm={(p, force) => void confirmKill(p, force)}
       />
 
-      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <SettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        bgSet={bgUrl !== null}
+        onBgChanged={() => reloadBg()}
+      />
 
       <Dialog
         open={elevConfirmOpen}
