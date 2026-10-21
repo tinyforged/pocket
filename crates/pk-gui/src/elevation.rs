@@ -1,5 +1,7 @@
 //! 提权链路：检测当前是否已提权、以管理员权限重启应用。
 
+use crate::logging;
+
 /// 当前是否以管理员 / root 运行（决定前端"提权重启"入口是否显示）。
 #[cfg(unix)]
 #[allow(unsafe_code)] // libc::geteuid 是 FFI，无 safe 封装可用
@@ -56,6 +58,7 @@ pub async fn relaunch_elevated(app: tauri::AppHandle) -> Result<(), String> {
 
     cmd.spawn()
         .map_err(|e| format!("提权启动器拉起失败：{e}"))?;
+    logging::info("请求管理员权限并重启应用");
     app.exit(0);
     Ok(())
 }

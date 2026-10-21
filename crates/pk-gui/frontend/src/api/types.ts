@@ -28,3 +28,18 @@ export interface KillResultDto {
   outcome: string | null;
   message: string;
 }
+
+/** 应用日志条目（pk-gui/src/logging.rs） */
+export interface LogEntryDto {
+  time: string;
+  level: "info" | "warn" | "error";
+  message: string;
+}
+
+/** 数据目录信息（pk-gui/src/storage.rs） */
+export interface StorageInfoDto {
+  dir: string;
+  defaultDir: string;
+  backgroundBytes: number;
+  logsBytes: number;
+}

@@ -2,7 +2,7 @@ import { Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Toaster } from "sonner";
 
-import SettingsDialog from "@/appearance/settings/SettingsDialog";
+import SettingsDialog from "@/settings/SettingsDialog";
 import BackgroundLayer from "@/appearance/BackgroundLayer";
 import { useAppearanceSync } from "@/appearance/useAppearanceSync";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import TopBar from "@/components/TopBar";
 import ElevationBanner from "@/elevation/ElevationBanner";
 import RelaunchDialog from "@/elevation/RelaunchDialog";
 import { useElevation } from "@/elevation/useElevation";
+import LogDialog from "@/logging/LogDialog";
 import KillDialog from "@/ports/KillDialog";
 import { useKill } from "@/ports/kill";
 import ListSkeleton from "@/ports/ListSkeleton";
@@ -34,6 +35,7 @@ export default function App() {
   const [keyword, setKeyword] = useState("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [logOpen, setLogOpen] = useState(false);
   const [elevConfirmOpen, setElevConfirmOpen] = useState(false);
   /** 速查（首页）= 搜索优先；列表 = 浏览全部。记忆上次选择 */
   const [mode, setMode] = useState<ViewMode>(readMode);
@@ -189,7 +191,13 @@ export default function App() {
         onOpenChange={setSettingsOpen}
         bgSet={bgUrl !== null}
         onBgChanged={reloadBg}
+        onOpenLogs={() => {
+          setSettingsOpen(false);
+          setLogOpen(true);
+        }}
       />
+
+      <LogDialog open={logOpen} onOpenChange={setLogOpen} />
 
       <RelaunchDialog open={elevConfirmOpen} onOpenChange={setElevConfirmOpen} />
 

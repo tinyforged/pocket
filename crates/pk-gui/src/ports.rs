@@ -6,11 +6,22 @@ use pk_core::model::{KillTarget, RiskLevel};
 use pk_core::scan;
 
 use crate::dto::{KillRequest, KillResultDto, PortEntryDto, entry_dto};
+use crate::logging;
 
 /// 扫描端口占用；`port` 为 `None` 时返回全部。
 #[tauri::command]
 pub async fn scan_ports(port: Option<u16>) -> Result<Vec<PortEntryDto>, String> {
-    let entries = scan::scanner().scan().map_err(|e| e.to_string())?;
+    let entries = scan::scanner().scan().map_err(|e| {
+        logging::error(format!("扫描失败：{e}"));
+        e.to_string()
+    })?;
+    let invisible = entries.iter().filter(|e| e.process.is_none()).count();
+    logging::info(format!(
+        "扫描完成：{} 条占用，{} 个进程，{} 条不可见",
+        entries.len(),
+        entries.iter().filter_map(|e| e.process.as_ref()).count(),
+        invisible
+    ));
     Ok(entries
         .iter()
         .filter(|e| port.is_none_or(|p| e.port == p))
@@ -45,6 +56,7 @@ pub async fn kill_processes(
         };
 
         if p.risk() == RiskLevel::Critical && !force {
+            logging::warn(format!("拒绝终止受保护进程 pid {}（{}）", r.pid, p.name));
             results.push(KillResultDto {
                 pid: r.pid,
                 ok: false,
@@ -59,22 +71,37 @@ pub async fn kill_processes(
             expect_start_time: Some(r.start_time),
         };
         match killer.terminate(&target) {
-            Ok(outcome) => results.push(KillResultDto {
-                pid: r.pid,
-                ok: true,
-                outcome: Some(match outcome {
-                    KillOutcome::Terminated => "已退出（SIGTERM）",
-                    KillOutcome::ForceKilled => "已强制终止（SIGKILL）",
-                    KillOutcome::AlreadyExited => "终止前已退出",
-                }),
-                message: String::new(),
-            }),
-            Err(e) => results.push(KillResultDto {
-                pid: r.pid,
-                ok: false,
-                outcome: None,
-                message: e.to_string(),
-            }),
+            Ok(outcome) => {
+                logging::info(format!(
+                    "终止 pid {}（{}）：{}",
+                    r.pid,
+                    p.name,
+                    match outcome {
+                        KillOutcome::Terminated => "已退出（SIGTERM）",
+                        KillOutcome::ForceKilled => "已强制终止（SIGKILL）",
+                        KillOutcome::AlreadyExited => "终止前已退出",
+                    }
+                ));
+                results.push(KillResultDto {
+                    pid: r.pid,
+                    ok: true,
+                    outcome: Some(match outcome {
+                        KillOutcome::Terminated => "已退出（SIGTERM）",
+                        KillOutcome::ForceKilled => "已强制终止（SIGKILL）",
+                        KillOutcome::AlreadyExited => "终止前已退出",
+                    }),
+                    message: String::new(),
+                })
+            }
+            Err(e) => {
+                logging::error(format!("终止 pid {}（{}）失败：{e}", r.pid, p.name));
+                results.push(KillResultDto {
+                    pid: r.pid,
+                    ok: false,
+                    outcome: None,
+                    message: e.to_string(),
+                })
+            }
         }
     }
     Ok(results)

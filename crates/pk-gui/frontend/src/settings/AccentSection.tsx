@@ -2,7 +2,7 @@ import { Label } from "@/components/ui/label";
 import { useSettings } from "@/providers/settings";
 import { cn } from "@/lib/utils";
 
-import { ACCENTS, ACCENT_KEYS } from "../accents";
+import { ACCENTS, ACCENT_KEYS } from "../appearance/accents";
 
 /** 主题色：内置 5 套，双圆点展示亮 / 暗两档。 */
 export default function AccentSection() {

@@ -12,8 +12,9 @@ tauri-build.workspace = true
 [dependencies]
 pk-core.workspace = true
 serde.workspace = true
+serde_json.workspace = true
 tauri.workspace = true
-# 系统文件选择器（背景图片）；base64 用于图片转 data URL 给前端
+# 系统文件选择器（背景图片 / 导出日志 / 更换数据目录）
 rfd.workspace = true
 base64.workspace = true
 
