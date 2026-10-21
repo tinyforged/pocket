@@ -1,0 +1,98 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- 主题令牌：亮 ---------- */
+:root {
+  --background: #f6f7fa;
+  --foreground: #1c2333;
+  --card: #ffffff;
+  --card-foreground: #1c2333;
+  --muted: #eceef4;
+  --muted-foreground: #6b7288;
+  --border: #e1e4ee;
+  --primary: #3d6fe0;
+  --primary-foreground: #ffffff;
+  --danger: #e03e36;
+  --warn: #b97a10;
+  --ok: #1d9e52;
+  --tcp: #2f5fd0;
+  --udp: #8a4fd3;
+  /* 背景装饰光晕 */
+  --glow-1: rgba(61, 111, 224, 0.08);
+  --glow-2: rgba(29, 158, 82, 0.05);
+}
+
+/* ---------- 主题令牌：暗 ---------- */
+.dark {
+  --background: #0b0d12;
+  --foreground: #e8eaf0;
+  --card: #141824;
+  --card-foreground: #e8eaf0;
+  --muted: #1c2130;
+  --muted-foreground: #8b93a7;
+  --border: rgba(255, 255, 255, 0.09);
+  --primary: #5b8cff;
+  --primary-foreground: #ffffff;
+  --danger: #ff5f57;
+  --warn: #ffb340;
+  --ok: #30d158;
+  --tcp: #7db4ff;
+  --udp: #c9a0ff;
+  --glow-1: rgba(91, 140, 255, 0.1);
+  --glow-2: rgba(48, 209, 88, 0.05);
+}
+
+/* ---------- 令牌映射进 Tailwind（v4 CSS-first） ---------- */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-danger: var(--danger);
+  --color-warn: var(--warn);
+  --color-ok: var(--ok);
+  --color-tcp: var(--tcp);
+  --color-udp: var(--udp);
+  --font-sans:
+    -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+    "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--foreground);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(1000px 500px at 85% -10%, var(--glow-1), transparent 60%),
+    radial-gradient(800px 400px at -10% 110%, var(--glow-2), transparent 55%);
+  background-attachment: fixed;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 细滚动条，两种主题各自适配 */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

@@ -90,3 +90,23 @@
 - 后果：改前端需重新编译（无热载，`cargo run -p pk-gui` 即可）；
   Linux CI 需安装 webkit2gtk 系统依赖；工作区依赖树显著变大
   （tauri 全家桶），但只落在 `pk-gui`，core / cli 不受影响。
+
+## ADR-007：前端工程化（替代 ADR-006 的"无 node 静态前端"部分）
+
+- 状态：已接受（2026-10-21）
+- 背景：GUI 是产品本体，前端会持续长大（设置中心、书签、进程树、
+  批量操作）；原生三件套没有热载（改一行 CSS 都要重编 Rust）、组件
+  全部手搓，"高颜值"的迭代效率上不去。ADR-006 的结论中 Tauri vs
+  egui 的部分仍然成立，"无 node"只在原型期划算。
+- 决策：
+  - Vite + React 19 + TypeScript（strict）+ Tailwind v4（CSS-first
+    配置，主题令牌全走 CSS 变量）；
+  - 组件按 shadcn 模式手写 vendor（Radix 原语 + cva +
+    tailwind-merge），与 CLI 生成物一致，但避免 CLI 的交互流程与
+    对外网 registry 的依赖；图标 lucide-react，toast sonner；
+  - pnpm 管理（`packageManager` 锁版本），`.npmrc` 指向 npmmirror，
+    依赖全部锁最新版；
+  - `tauri.conf.json` 接 devUrl:5173，`pnpm tauri dev` 一键 HMR；
+    release 时前端产物编译期嵌入 `frontend/dist`（CI 先 build 前端）。
+- 后果：仓库引入 node 工具链（pnpm-lock、CI 增加 pnpm/setup-node）；
+  改前端不再重编 Rust；前端目录自成包管理单元，Rust 侧不受影响。

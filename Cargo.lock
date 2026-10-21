@@ -2452,6 +2452,7 @@ dependencies = [
 name = "pk-gui"
 version = "0.1.0"
 dependencies = [
+ "libc",
  "pk-core",
  "serde",
  "tauri",

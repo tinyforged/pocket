@@ -34,7 +34,15 @@ pk port kill 8080   # 终止占用进程：SIGTERM → 3s 宽限 → SIGKILL
 cargo fmt
 cargo clippy --all-targets -- -D warnings
 cargo test --all
-cargo run -p pk-gui   # 启动端口终结者 GUI（改前端需重新编译，无热载）
+```
+
+GUI（Tauri + Vite/React，改前端不重编 Rust）：
+
+```bash
+cd crates/pk-gui/frontend
+pnpm install          # 首次
+pnpm tauri dev        # 开发：Vite HMR + Tauri 窗口
+pnpm tauri build      # 打包
 ```
 
 提交遵循 Conventional Commits（`feat:` / `fix:` / `refactor:`），trunk-based，直推 `main`。

@@ -4,17 +4,20 @@
   "version": "0.1.0",
   "identifier": "dev.tinyforged.pocket",
   "build": {
-    "frontendDist": "dist"
+    "devUrl": "http://localhost:5173",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build",
+    "frontendDist": "frontend/dist"
   },
   "app": {
-    "withGlobalTauri": true,
+    "withGlobalTauri": false,
     "windows": [
       {
         "title": "端口终结者 · pk",
-        "width": 1020,
-        "height": 700,
-        "minWidth": 800,
-        "minHeight": 520
+        "width": 1080,
+        "height": 720,
+        "minWidth": 860,
+        "minHeight": 560
       }
     ]
   },
