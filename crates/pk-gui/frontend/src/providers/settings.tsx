@@ -41,6 +41,9 @@ export interface Settings {
 
 const STORAGE_KEY = "pk.settings";
 
+/** 设置结构版本：升级时对旧存储做一次性迁移（见 readStored）。 */
+const SETTINGS_VERSION = 2;
+
 /** 可选的刷新频率（毫秒）。 */
 export const INTERVAL_OPTIONS = [
   { value: 2000, label: "2 秒" },
@@ -76,13 +79,21 @@ function readStored(): Settings {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULTS;
-    const parsed = JSON.parse(raw) as Partial<Settings>;
+    const parsed = JSON.parse(raw) as Partial<Settings> & { v?: number };
+    const { v, ...rest } = parsed;
     // 深合并 bg：旧版本存储没有该字段也能拿到完整默认值
-    return {
+    const settings: Settings = {
       ...DEFAULTS,
-      ...parsed,
-      bg: { ...DEFAULTS.bg, ...(parsed.bg ?? {}) },
+      ...rest,
+      bg: { ...DEFAULTS.bg, ...(rest.bg ?? {}) },
     };
+    // v1 → v2：智能刷新成为默认。旧默认值（关闭 / 4 秒）无法区分
+    // 用户意图，一次性迁到"开启 + 30 秒"；非默认档位视为用户自选，保留
+    if ((v ?? 1) < 2) {
+      if (!settings.autoRefresh) settings.autoRefresh = true;
+      if (settings.intervalMs === 4000) settings.intervalMs = 30000;
+    }
+    return settings;
   } catch {
     return DEFAULTS;
   }
@@ -92,7 +103,10 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(readStored);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ v: SETTINGS_VERSION, ...settings }),
+    );
   }, [settings]);
 
   const update = useCallback((patch: Partial<Settings>) => {
