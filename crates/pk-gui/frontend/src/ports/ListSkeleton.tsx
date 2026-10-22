@@ -3,27 +3,30 @@ import { GRID } from "./PortTable";
 
 export default function ListSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <div className="flex flex-col gap-2 pb-2 pt-3" aria-busy="true">
+    <div className="rounded-lg border bg-card" aria-busy="true">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className={`${GRID} py-2.5`}>
+        <div
+          key={i}
+          className={`${GRID} py-1.5 ${i > 0 ? "border-t border-border" : ""}`}
+        >
           <div
-            className="h-5 animate-pulse rounded bg-muted"
+            className="h-4 animate-pulse rounded bg-muted"
             style={{ animationDelay: `${i * 70}ms` }}
           />
           <div
-            className="h-5 w-10 animate-pulse rounded bg-muted"
+            className="h-4 w-7 animate-pulse rounded bg-muted"
             style={{ animationDelay: `${i * 70 + 50}ms` }}
           />
           <div
-            className="h-4 w-28 animate-pulse rounded bg-muted"
+            className="h-3.5 w-24 animate-pulse rounded bg-muted"
             style={{ animationDelay: `${i * 70 + 100}ms` }}
           />
           <div
-            className="h-4 w-16 animate-pulse rounded bg-muted"
+            className="h-3.5 w-12 animate-pulse rounded bg-muted"
             style={{ animationDelay: `${i * 70 + 150}ms` }}
           />
           <div
-            className="h-4 max-w-64 animate-pulse rounded bg-muted"
+            className="h-3.5 max-w-56 animate-pulse rounded bg-muted"
             style={{ animationDelay: `${i * 70 + 200}ms` }}
           />
           <div />

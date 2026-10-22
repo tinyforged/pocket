@@ -15,8 +15,8 @@
     "windows": [
       {
         "title": "Pocket",
-        "width": 1080,
-        "height": 720,
+        "width": 940,
+        "height": 640,
         "minWidth": 860,
         "minHeight": 560
       }

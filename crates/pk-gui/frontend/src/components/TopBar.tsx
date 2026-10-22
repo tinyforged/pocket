@@ -1,5 +1,4 @@
 import {
-  ListTree,
   Loader,
   Monitor,
   Moon,
@@ -13,6 +12,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { useSettings } from "@/providers/settings";
 import { useTheme, type ThemePreference } from "@/providers/theme";
 
@@ -41,7 +41,12 @@ const THEME_META: Record<
   dark: { icon: Moon, label: "暗色" },
 };
 
-/** 应用顶栏：品牌 / 搜索 / 刷新与外观入口（跨领域的应用级组件）。 */
+const MODES: Array<{ value: ViewMode; label: string }> = [
+  { value: "query", label: "速查" },
+  { value: "list", label: "浏览全部" },
+];
+
+/** 应用顶栏：品牌 / 模式切换 / 搜索 / 刷新与外观入口（跨领域的应用级组件）。 */
 export default function TopBar({
   mode,
   onMode,
@@ -65,109 +70,110 @@ export default function TopBar({
   const ThemeIcon = THEME_META[preference].icon;
 
   return (
-    <header className="sticky top-0 z-20 flex items-center justify-between gap-4 border-b border-border/80 bg-card/80 px-5 py-3 backdrop-blur-2xl">
-      <div className="flex items-center gap-3">
-        <div className="relative grid size-10 place-items-center overflow-hidden rounded-xl border border-primary/30 bg-linear-to-br from-primary/20 via-primary/8 to-transparent shadow-[0_0_24px_var(--glow-1)]">
-          <span className="absolute -right-2 -top-2 size-6 rounded-full bg-primary/20 blur-md" />
-          <Zap className="size-5 text-primary" strokeWidth={2.2} />
+    <header className="sticky top-0 z-20 flex h-11 shrink-0 items-center justify-between gap-3 border-b bg-card px-4">
+      <div className="flex min-w-0 items-center gap-2.5">
+        <div className="grid size-6 shrink-0 place-items-center rounded-md bg-primary text-primary-foreground">
+          <Zap className="size-3.5" strokeWidth={2.5} />
         </div>
-        <div>
-          <h1 className="text-[17px] font-bold tracking-wide">端口终结者</h1>
-          <p className="mt-0.5 text-[11px] tracking-wide text-muted-foreground">
-            PORT PROCESS MANAGER
-          </p>
+        <h1 className="shrink-0 text-[13px] font-semibold">Pocket</h1>
+
+        {/* 分段式模式切换：两个模式始终可见，当前项即所见 */}
+        <div className="ml-1.5 flex items-center rounded-lg bg-muted p-0.5">
+          {MODES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => onMode(value)}
+              aria-pressed={mode === value}
+              title={
+                value === "query"
+                  ? "按端口号 / 进程名直接定位"
+                  : "列表浏览全部端口占用"
+              }
+              className={cn(
+                "h-6 cursor-pointer rounded-md px-2.5 text-[11px] font-medium transition-colors",
+                mode === value
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        {mode === "query" ? (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onMode("list")}
-            title="切换到列表模式，浏览全部端口占用"
-          >
-            <ListTree />
-            浏览全部
-          </Button>
-        ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => onMode("query")}
-            title="切换到速查模式，按端口号 / 进程名直接定位"
-          >
-            <Zap />
-            速查
-          </Button>
-        )}
-
+      <div className="flex items-center gap-2.5">
         {mode === "list" && (
-          <div className="flex items-center gap-2 rounded-[10px] border border-border bg-muted/50 px-3 py-1.5 transition-colors focus-within:border-primary/60 focus-within:shadow-[0_0_0_3px] focus-within:shadow-primary/15">
-          <Search className="size-3.5 shrink-0 text-muted-foreground" />
-          <input
-            data-search
-            value={keyword}
-            onChange={(e) => onKeyword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Escape" && keyword) {
-                onKeyword("");
-                e.currentTarget.blur();
-              }
-            }}
-            placeholder="端口 / 地址 / PID / 进程 / 用户，按 / 聚焦"
-            className="w-52 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground"
-          />
-          {keyword && (
-            <>
-              <span
-                className="shrink-0 rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground"
-                title="匹配条数 / 总条数"
-              >
-                {matchCount}/{totalCount}
-              </span>
-              <button
-                type="button"
-                onClick={() => onKeyword("")}
-                title="清空搜索（Esc）"
-                className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
-              >
-                <X className="size-3.5" />
-              </button>
-            </>
-          )}
+          <div className="flex h-7 items-center gap-1.5 rounded-md border border-border bg-card px-2 transition-colors focus-within:border-primary/60">
+            <Search className="size-3 shrink-0 text-muted-foreground" />
+            <input
+              data-search
+              value={keyword}
+              onChange={(e) => onKeyword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape" && keyword) {
+                  onKeyword("");
+                  e.currentTarget.blur();
+                }
+              }}
+              placeholder="端口 / PID / 进程 / 用户"
+              aria-label="搜索端口、地址、PID、进程或用户"
+              className="w-44 bg-transparent text-xs outline-none placeholder:text-muted-foreground"
+            />
+            {keyword && (
+              <>
+                <span
+                  className="shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground"
+                  title="匹配条数 / 总条数"
+                >
+                  {matchCount}/{totalCount}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => onKeyword("")}
+                  title="清空搜索（Esc）"
+                  className="cursor-pointer text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <X className="size-3" />
+                </button>
+              </>
+            )}
           </div>
         )}
 
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-border/70 bg-muted/30 px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/70">
+        <label
+          className="flex cursor-pointer items-center gap-1.5 text-[11px] text-muted-foreground"
+          title="自动刷新开关"
+        >
           <Switch
             checked={settings.autoRefresh}
             onCheckedChange={(v) => update({ autoRefresh: v })}
           />
           <button
             onClick={onOpenSettings}
-            className="flex items-center gap-1.5 rounded px-1 py-0.5 font-mono hover:bg-muted hover:text-foreground"
+            className="cursor-pointer rounded px-0.5 font-mono tabular-nums hover:bg-muted hover:text-foreground"
             title="在设置中调整刷新频率"
           >
-            {settings.autoRefresh && (
-              <span className="size-1.5 animate-pulse rounded-full bg-ok" />
-            )}
             {settings.intervalMs / 1000}s
           </button>
         </label>
 
-        <Button variant="ghost" size="sm" onClick={onRefresh} disabled={refreshing}>
-          {refreshing ? (
-            <Loader className="animate-spin" />
-          ) : (
-            <RefreshCw />
-          )}
-          刷新
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-7"
+          onClick={onRefresh}
+          disabled={refreshing}
+          title="刷新"
+        >
+          {refreshing ? <Loader className="animate-spin" /> : <RefreshCw />}
         </Button>
 
         <Button
           variant="ghost"
           size="icon"
+          className="size-7"
           onClick={cycleTheme}
           title={`主题：${THEME_META[preference].label}（点击切换）`}
         >
@@ -177,6 +183,7 @@ export default function TopBar({
         <Button
           variant="ghost"
           size="icon"
+          className="size-7"
           onClick={onOpenSettings}
           title="设置"
         >

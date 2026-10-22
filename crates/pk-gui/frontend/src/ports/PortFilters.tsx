@@ -1,6 +1,4 @@
-import { ListFilter, RadioTower, RotateCcw } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
+import { RotateCcw } from "lucide-react";
 
 export type ProtocolFilter = "all" | "tcp" | "udp";
 
@@ -26,18 +24,14 @@ export default function PortFilters({
   const active = protocol !== "all" || listeningOnly;
 
   const optionClass = (selected: boolean) =>
-    `inline-flex h-7 items-center gap-1.5 rounded-lg border px-2.5 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+    `inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-2 text-[11px] font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
       selected
-        ? "border-primary/30 bg-primary/10 text-primary"
-        : "border-transparent text-muted-foreground hover:border-border hover:bg-muted/70 hover:text-foreground"
+        ? "bg-muted text-foreground"
+        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
     }`;
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border/70 bg-card/65 px-2.5 py-2">
-      <span className="mr-1 inline-flex items-center gap-1.5 px-1 text-[10px] font-semibold tracking-wide text-muted-foreground">
-        <ListFilter className="size-3" />
-        筛选
-      </span>
+    <div className="flex flex-wrap items-center gap-1 text-[11px]">
       <button
         type="button"
         aria-pressed={protocol === "all"}
@@ -52,7 +46,7 @@ export default function PortFilters({
         onClick={() => onProtocolChange(protocol === "tcp" ? "all" : "tcp")}
         className={optionClass(protocol === "tcp")}
       >
-        <Badge variant="protoTcp" className="px-1.5 py-0.5 text-[9px]">TCP</Badge>
+        <span className="font-mono text-[10px] font-bold text-tcp">TCP</span>
         <Count>{tcpCount}</Count>
       </button>
       <button
@@ -61,7 +55,7 @@ export default function PortFilters({
         onClick={() => onProtocolChange(protocol === "udp" ? "all" : "udp")}
         className={optionClass(protocol === "udp")}
       >
-        <Badge variant="protoUdp" className="px-1.5 py-0.5 text-[9px]">UDP</Badge>
+        <span className="font-mono text-[10px] font-bold text-udp">UDP</span>
         <Count>{udpCount}</Count>
       </button>
       <span className="mx-0.5 h-4 w-px bg-border" />
@@ -71,7 +65,6 @@ export default function PortFilters({
         onClick={() => onListeningChange(!listeningOnly)}
         className={optionClass(listeningOnly)}
       >
-        <RadioTower className="size-3" />
         仅监听 <Count>{listenCount}</Count>
       </button>
       {active && (
@@ -81,7 +74,7 @@ export default function PortFilters({
             onProtocolChange("all");
             onListeningChange(false);
           }}
-          className="ml-auto inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="ml-1 inline-flex h-6 cursor-pointer items-center gap-1 rounded-md px-2 text-[10px] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           title="清除筛选条件"
         >
           <RotateCcw className="size-3" />

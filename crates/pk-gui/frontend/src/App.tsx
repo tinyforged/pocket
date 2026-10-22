@@ -1,4 +1,4 @@
-import { Loader, PartyPopper, SearchX } from "lucide-react";
+import { Loader } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
 import AppToaster from "@/components/AppToaster";
@@ -114,7 +114,7 @@ export default function App() {
         />
       )}
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-5 pb-4">
+      <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
         {mode === "query" ? (
           <QueryLanding
             keyword={keyword}
@@ -143,16 +143,13 @@ export default function App() {
                     onKillGroup={(ps) => kill.setPending(ps)}
                   />
                 ) : (
-                  <div className="grid place-items-center gap-3 py-16 text-muted-foreground">
-                    <div className="grid size-12 place-items-center rounded-full bg-muted/70">
-                      <SearchX className="size-5" />
-                    </div>
-                    <p className="text-sm">
+                  <div className="py-12 text-center text-xs text-muted-foreground">
+                    <p>
                       {hasRefinement
                         ? "没有符合条件的端口占用"
                         : "没有匹配的端口占用"}
                     </p>
-                    <p className="text-xs text-muted-foreground/70">
+                    <p className="mt-1.5 text-[11px] text-muted-foreground/70">
                       {keyword
                         ? "试试端口号、地址、PID、进程名或用户，Esc 清空搜索"
                         : "可以调整协议或监听状态筛选"}
@@ -167,7 +164,7 @@ export default function App() {
           <div
             className={
               bgUrl
-                ? "overflow-x-auto rounded-2xl border border-border bg-card px-3 py-1 shadow-lg"
+                ? "overflow-x-auto rounded-xl bg-card p-3"
                 : "overflow-x-auto"
             }
           >
@@ -191,22 +188,15 @@ export default function App() {
                 onKillGroup={(ps) => kill.setPending(ps)}
               />
             ) : (
-              <div className="grid place-items-center gap-3 py-24 text-muted-foreground">
-                <div className="grid size-14 place-items-center rounded-full bg-muted/70">
-                  {keyword ? (
-                    <SearchX className="size-6" />
-                  ) : (
-                    <PartyPopper className="size-6 text-ok" />
-                  )}
-                </div>
-                <p className="text-sm">
+              <div className="py-14 text-center text-xs text-muted-foreground">
+                <p>
                   {portRangeHint(keyword) ??
                     (hasRefinement
                       ? "没有符合条件的端口占用"
                       : "当前没有端口被占用")}
                 </p>
                 {hasRefinement && !portRangeHint(keyword) && (
-                  <p className="text-xs text-muted-foreground/70">
+                  <p className="mt-1.5 text-[11px] text-muted-foreground/70">
                     {keyword
                       ? "试试端口号、地址、PID、进程名或用户，Esc 清空搜索"
                       : "可以调整协议或监听状态筛选"}
@@ -218,7 +208,7 @@ export default function App() {
         )}
       </main>
 
-      <footer className="flex items-center justify-between border-t border-border bg-card/40 px-5 py-2 text-[11.5px] text-muted-foreground backdrop-blur-xl">
+      <footer className="flex items-center border-t border-border px-4 py-1.5 text-[11px] text-muted-foreground">
         <span className="flex items-center gap-2">
           {stats.total} 条占用 · {stats.pids} 个进程
           {stats.critical > 0 && ` · 受保护 ${stats.critical}`}
@@ -226,7 +216,6 @@ export default function App() {
           {refreshing && <Loader className="size-3 animate-spin" />}
           <ScanTime at={lastScanAt} />
         </span>
-        <span>终止顺序：SIGTERM → 3s 宽限 → SIGKILL</span>
       </footer>
 
       <KillDialog

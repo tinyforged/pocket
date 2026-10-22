@@ -6,7 +6,7 @@ import {
   Loader,
   ZapOff,
 } from "lucide-react";
-import { Fragment, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import type { PortEntryDto, ProcessDto } from "@/api/types";
@@ -19,7 +19,7 @@ import PortDetail from "./PortDetail";
 
 /** 列布局（骨架屏也用）；组成员行沿用同一网格，列与外部平铺行对齐 */
 export const GRID =
-  "grid min-w-[820px] grid-cols-[72px_60px_140px_100px_minmax(0,1fr)_76px_88px] items-center gap-2.5 px-3";
+  "grid min-w-[760px] grid-cols-[64px_52px_128px_88px_minmax(0,1fr)_64px_80px] items-center gap-2 px-3";
 
 /** 行标识：同 (port, proto, addr) 的多隐形条目靠调用方追加序号兜底。 */
 export function rowKey(e: PortEntryDto): string {
@@ -42,7 +42,7 @@ interface PortTableProps {
   onKillGroup: (processes: ProcessDto[]) => void;
 }
 
-/** 单进程端口 = 平铺行；多进程共用端口 = 组卡片（头横条 + 成员行）。 */
+/** 单进程端口 = 平铺行；多进程共用端口 = 组（横条头 + 成员行）。 */
 type Item =
   | { kind: "flat"; entry: PortEntryDto }
   | {
@@ -175,9 +175,9 @@ export default function PortTable({
   }, [items]);
 
   return (
-    <div className="flex min-w-[820px] flex-col gap-1">
+    <div className="rounded-lg border bg-card">
       <div
-        className={`${GRID} sticky top-0 z-10 border-b border-border/70 bg-card/95 pb-2.5 pt-3 text-[10px] font-semibold tracking-[0.14em] text-muted-foreground backdrop-blur-md`}
+        className={`${GRID} sticky top-0 z-10 h-8 bg-card text-[10px] font-medium text-muted-foreground`}
       >
         <SortHeader label="端口" active={sort?.key === "port"} dir={sort?.dir} onClick={() => cycle("port")} />
         <span>协议</span>
@@ -187,34 +187,36 @@ export default function PortTable({
         <SortHeader label="内存" active={sort?.key === "memory"} dir={sort?.dir} className="justify-end" onClick={() => cycle("memory")} />
         <span />
       </div>
-      {items.map((it) =>
-        it.kind === "flat" ? (
-          <PortRow
-            key={keyOf.get(it.entry)}
-            entry={it.entry}
-            open={expanded.has(keyOf.get(it.entry)!)}
-            onToggle={() => onToggle(keyOf.get(it.entry)!)}
-            killing={killing.has(it.entry.process?.pid ?? -1)}
-            result={
-              it.entry.process ? results.get(it.entry.process.pid) : undefined
-            }
-            onKill={onKill}
-          />
-        ) : (
-          <GroupCard
-            key={`g${it.port}/${it.protocol}`}
-            group={it}
-            busy={it.processes.some((p) => killing.has(p.pid))}
-            keyOf={keyOf}
-            expanded={expanded}
-            onToggle={onToggle}
-            killing={killing}
-            results={results}
-            onKill={onKill}
-            onKillGroup={onKillGroup}
-          />
-        ),
-      )}
+      <div className="divide-y divide-border">
+        {items.map((it) =>
+          it.kind === "flat" ? (
+            <PortRow
+              key={keyOf.get(it.entry)}
+              entry={it.entry}
+              open={expanded.has(keyOf.get(it.entry)!)}
+              onToggle={() => onToggle(keyOf.get(it.entry)!)}
+              killing={killing.has(it.entry.process?.pid ?? -1)}
+              result={
+                it.entry.process ? results.get(it.entry.process.pid) : undefined
+              }
+              onKill={onKill}
+            />
+          ) : (
+            <GroupCard
+              key={`g${it.port}/${it.protocol}`}
+              group={it}
+              busy={it.processes.some((p) => killing.has(p.pid))}
+              keyOf={keyOf}
+              expanded={expanded}
+              onToggle={onToggle}
+              killing={killing}
+              results={results}
+              onKill={onKill}
+              onKillGroup={onKillGroup}
+            />
+          ),
+        )}
+      </div>
     </div>
   );
 }
@@ -257,7 +259,7 @@ function copy(ev: { stopPropagation: () => void }, text: string, what: string) {
   toast.success(`已复制${what}：${text}`);
 }
 
-/** 组卡片：头横条自由布局（端口号 + 概要 + 全部终止），成员行沿用数据网格。 */
+/** 组：底色横条头（端口号 + 概要 + 全部终止），成员行沿用数据网格。 */
 function GroupCard({
   group,
   busy,
@@ -288,25 +290,26 @@ function GroupCard({
   ].filter(Boolean) as string[];
 
   return (
-    <div className="my-1.5 overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm shadow-black/[0.025]">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-border/60 bg-muted/45 px-3 py-2.5">
+    <div className="bg-muted/30">
+      <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1 px-3 py-1.5">
         <span
           title="点击复制端口号"
           onClick={(ev) => copy(ev, String(group.port), "端口")}
-          className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
+          className="cursor-copy font-mono text-[13px] font-bold text-primary hover:underline"
         >
           {group.port}
         </span>
-        <Badge
-          variant={group.protocol === "tcp" ? "protoTcp" : "protoUdp"}
-          className="uppercase"
+        <span
+          className={`font-mono text-[10px] font-bold uppercase ${
+            group.protocol === "tcp" ? "text-tcp" : "text-udp"
+          }`}
         >
           {group.protocol}
-        </Badge>
-        <span className="text-xs font-semibold">
+        </span>
+        <span className="text-[11px] font-medium">
           {group.processes.length} 个进程共用
         </span>
-        <span className="text-[11px] text-muted-foreground">
+        <span className="text-[10px] text-muted-foreground">
           {meta.join(" · ")}
         </span>
         <span className="ml-auto">
@@ -321,7 +324,7 @@ function GroupCard({
           </Button>
         </span>
       </div>
-      <div className="divide-y divide-border/50">
+      <div className="divide-y divide-border/60 border-t border-border/60 bg-card">
         {group.members.map((m) => (
           <PortRow
             key={keyOf.get(m)}
@@ -349,7 +352,7 @@ function PortRow({
   onKill,
 }: {
   entry: PortEntryDto;
-  /** 组卡片内成员行：无自带分隔（卡片负责），首格以折角箭头示意从属 */
+  /** 组内成员行：首格以折角箭头示意从属，协议列并入组头 */
   member?: boolean;
   open: boolean;
   onToggle: () => void;
@@ -360,22 +363,22 @@ function PortRow({
   const p = e.process;
 
   return (
-    <Fragment>
+    <div>
       <div
         onClick={onToggle}
         title="点击行展开详情"
-        className={`${GRID} cursor-pointer transition-colors hover:bg-primary/[0.045] ${
-          member ? "py-2" : "rounded-xl border border-border/65 bg-card/75 py-2.5 shadow-sm shadow-black/[0.02]"
-        } ${p?.risk === "critical" ? "bg-danger/[0.055]" : ""}`}
+        className={`${GRID} cursor-pointer py-1.5 transition-colors hover:bg-muted/40 ${
+          p?.risk === "critical" ? "bg-danger/4" : ""
+        }`}
       >
         <span className="flex items-center">
           {member ? (
-            <CornerDownRight className="size-3.5 text-muted-foreground/50" />
+            <CornerDownRight className="size-3 text-muted-foreground/60" />
           ) : (
             <span
               title="点击复制端口号"
               onClick={(ev) => copy(ev, String(e.port), "端口")}
-              className="cursor-copy font-mono text-[15px] font-bold text-primary hover:underline"
+              className="cursor-copy font-mono text-[13px] font-semibold text-primary hover:underline"
             >
               {e.port}
             </span>
@@ -383,18 +386,19 @@ function PortRow({
         </span>
         <span>
           {!member && (
-            <Badge
-              variant={e.protocol === "tcp" ? "protoTcp" : "protoUdp"}
-              className="uppercase"
+            <span
+              className={`font-mono text-[10px] font-bold uppercase ${
+                e.protocol === "tcp" ? "text-tcp" : "text-udp"
+              }`}
             >
               {e.protocol}
-            </Badge>
+            </span>
           )}
         </span>
-        <span className="truncate font-mono text-xs text-muted-foreground">
+        <span className="truncate font-mono text-[11px] text-muted-foreground">
           {e.localAddr}
         </span>
-        <span className="font-mono text-xs text-muted-foreground">
+        <span className="font-mono text-[11px] text-muted-foreground">
           {e.state === "LISTEN" ? (
             <span className="inline-flex items-center gap-1.5">
               <span className="size-1.5 rounded-full bg-ok" />
@@ -406,17 +410,17 @@ function PortRow({
         </span>
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <ChevronRight
-            className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
+            className={`size-3 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-90" : ""}`}
           />
           {p ? (
             <>
-              <span className="max-w-64 truncate text-[13px] font-semibold">
+              <span className="max-w-64 truncate text-xs font-medium">
                 {p.name}
               </span>
               <span
                 title="点击复制 pid"
                 onClick={(ev) => copy(ev, String(p.pid), "pid")}
-                className="cursor-copy font-mono text-[11.5px] text-muted-foreground hover:text-foreground hover:underline"
+                className="cursor-copy font-mono text-[11px] text-muted-foreground hover:text-foreground hover:underline"
               >
                 pid {p.pid}
                 {p.user ? ` · ${p.user}` : ""}
@@ -427,14 +431,14 @@ function PortRow({
               {p.risk === "caution" && <Badge variant="warn">系统账户</Badge>}
             </>
           ) : (
-            <span className="text-xs text-muted-foreground">
+            <span className="text-[11px] text-muted-foreground">
               无法获取（可能需要提权）
             </span>
           )}
         </span>
         <span
           title="常驻内存（RSS），点表头可按内存排序"
-          className="text-right font-mono text-xs text-muted-foreground"
+          className="text-right font-mono text-[11px] tabular-nums text-muted-foreground"
         >
           {p && p.memory > 0 ? fmtBytes(p.memory) : "—"}
         </span>
@@ -463,13 +467,13 @@ function PortRow({
 
       {result && (
         <div
-          className={`py-1 pl-25 font-mono text-xs ${result.ok ? "text-ok" : "text-danger"}`}
+          className={`py-1 pl-16 font-mono text-[11px] ${result.ok ? "text-ok" : "text-danger"}`}
         >
           {result.ok ? "✓" : "✕"} {result.text}
         </div>
       )}
 
       {open && <PortDetail entry={e} />}
-    </Fragment>
+    </div>
   );
 }
