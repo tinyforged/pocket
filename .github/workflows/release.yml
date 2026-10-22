@@ -113,7 +113,18 @@ jobs:
           projectPath: crates/pk-gui
           tagName: ${{ github.ref_name }}
           releaseName: "pocket v__VERSION__"
-          releaseBody: "下载对应平台安装包；命令行见 pocket-v* 压缩包，解压后是 pk / pk.exe。"
+          releaseBody: |
+            ### 下载
+
+            | 系统 | 文件 |
+            | --- | --- |
+            | macOS（Intel / Apple Silicon 通用） | `Pocket___VERSION___universal.dmg` |
+            | Windows x64 | `Pocket___VERSION___x64-setup.exe` |
+            | Linux x64 | `Pocket___VERSION___amd64.AppImage` 或 `Pocket___VERSION___amd64.deb` |
+
+            命令行 `pk`：下载 `pocket-cli-v__VERSION__-*`（macos-universal / windows-x64 / linux-x64），解压即用。
+
+            其余文件（`.app.tar.gz`、`.nsis.zip`、`.sig`、`latest.json`）是应用内自动更新的内部制品，无需手动下载。
           # 草稿模式：构建完成确认无误后手动发布
           releaseDraft: true
           includeUpdaterJson: true
@@ -140,15 +151,15 @@ jobs:
           TAG="${GITHUB_REF_NAME}"
           case "${{ matrix.platform }}" in
             macos-latest)
-              ART="pocket-${TAG}-universal-apple-darwin.tar.gz"
+              ART="pocket-cli-${TAG}-macos-universal.tar.gz"
               tar -czf "$ART" -C target/universal-apple-darwin/release pk
               ;;
             windows-latest)
-              ART="pocket-${TAG}-x86_64-pc-windows-msvc.zip"
+              ART="pocket-cli-${TAG}-windows-x64.zip"
               tar -a -cf "$ART" -C target/release pk.exe
               ;;
             *)
-              ART="pocket-${TAG}-x86_64-unknown-linux-gnu.tar.gz"
+              ART="pocket-cli-${TAG}-linux-x64.tar.gz"
               tar -czf "$ART" -C target/release pk
               ;;
           esac
