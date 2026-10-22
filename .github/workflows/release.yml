@@ -116,6 +116,7 @@ jobs:
           releaseBody: "下载对应平台安装包；命令行见 pocket-v* 压缩包，解压后是 pk / pk.exe。"
           # 草稿模式：构建完成确认无误后手动发布
           releaseDraft: true
+          includeUpdaterJson: true
           args: ${{ matrix.args }}
 
       - name: 打包并上传 pk CLI
