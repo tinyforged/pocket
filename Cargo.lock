@@ -2582,7 +2582,7 @@ checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "pk-core"
-version = "0.1.0"
+version = "0.1.0-alpha.5"
 dependencies = [
  "netstat2",
  "sysinfo",
@@ -2591,7 +2591,7 @@ dependencies = [
 
 [[package]]
 name = "pk-gui"
-version = "0.1.0"
+version = "0.1.0-alpha.5"
 dependencies = [
  "base64 0.23.1",
  "libc",
@@ -2652,7 +2652,7 @@ dependencies = [
 
 [[package]]
 name = "pocket"
-version = "0.1.0"
+version = "0.1.0-alpha.5"
 dependencies = [
  "anyhow",
  "clap",
