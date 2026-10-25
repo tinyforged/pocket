@@ -170,7 +170,7 @@ export default function QueryLanding({
               浏览全部 {stats.total} 条 →
             </button>
           </div>
-          <div className="overflow-x-auto">{results}</div>
+          <div>{results}</div>
         </div>
       ) : !loaded ? (
         <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">

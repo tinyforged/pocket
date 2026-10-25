@@ -114,7 +114,9 @@ export default function App() {
         />
       )}
 
-      <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-3">
+      {/* 横纵滚动统一由 main 承担：内层再包 overflow-x-auto 会变成独立滚动盒，
+          表头 sticky 的最近滚动容器就不再是 main，吸顶随之失效 */}
+      <main className="min-h-0 flex-1 overflow-auto px-4 pb-3">
         {mode === "query" ? (
           <QueryLanding
             keyword={keyword}
@@ -161,13 +163,7 @@ export default function App() {
           />
         ) : (
           /* 有背景图时列表垫一张不透明卡片，保证可读性 */
-          <div
-            className={
-              bgUrl
-                ? "overflow-x-auto rounded-xl bg-card p-3"
-                : "overflow-x-auto"
-            }
-          >
+          <div className={bgUrl ? "rounded-xl bg-card p-3" : undefined}>
             <PortFilters
               protocol={protocolFilter}
               listeningOnly={listeningOnly}

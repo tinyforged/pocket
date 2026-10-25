@@ -177,7 +177,7 @@ export default function PortTable({
   return (
     <div className="rounded-lg border bg-card">
       <div
-        className={`${GRID} sticky top-0 z-10 h-8 bg-card text-[10px] font-medium text-muted-foreground`}
+        className={`${GRID} sticky top-0 z-10 h-8 border-b border-border bg-card text-[10px] font-medium text-muted-foreground`}
       >
         <SortHeader label="端口" active={sort?.key === "port"} dir={sort?.dir} onClick={() => cycle("port")} />
         <span>协议</span>
