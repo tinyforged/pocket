@@ -25,7 +25,6 @@ export default function ElevationBanner({
         </span>
       </div>
       <Button variant="outline" size="sm" onClick={onRelaunch}>
-        <ShieldAlert />
         提权重启
       </Button>
     </div>
