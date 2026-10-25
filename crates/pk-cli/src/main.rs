@@ -96,9 +96,21 @@ fn show_port(port: Option<u16>, verbose: bool) -> Result<()> {
         return Ok(());
     }
 
+    // 地址列宽自适应：IPv6（含 zone id）可超过 15 字符，取最长地址与
+    // 表头 ADDRESS 的较大者，避免对齐被撑破
+    let addr_w = entries
+        .iter()
+        .map(|e| e.local_addr.to_string().len())
+        .max()
+        .unwrap_or(0)
+        .max("ADDRESS".len());
     println!(
-        "{:>5}  {:<4}  {:<15}  {:<11}  PROCESS",
-        "PORT", "PROTO", "ADDRESS", "STATE"
+        "{:>5}  {:<4}  {:<addr_w$}  {:<11}  PROCESS",
+        "PORT",
+        "PROTO",
+        "ADDRESS",
+        "STATE",
+        addr_w = addr_w
     );
     for entry in &entries {
         let state = entry
@@ -111,8 +123,13 @@ fn show_port(port: Option<u16>, verbose: bool) -> Result<()> {
             None => "（无法获取进程，可能需要提权）".to_owned(),
         };
         println!(
-            "{:>5}  {:<4}  {:<15}  {:<11}  {}",
-            entry.port, entry.protocol, entry.local_addr, state, process
+            "{:>5}  {:<4}  {:<addr_w$}  {:<11}  {}",
+            entry.port,
+            entry.protocol,
+            entry.local_addr,
+            state,
+            process,
+            addr_w = addr_w
         );
         if verbose {
             if let Some(p) = &entry.process {
