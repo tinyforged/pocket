@@ -21,9 +21,12 @@ base64.workspace = true
 tauri-plugin-updater = "2.14.0"
 tauri-plugin-process = "2.4.0"
 
-# 提权检测（geteuid）；Windows 侧暂未实现令牌检测
+# 提权检测：unix 用 geteuid，Windows 用进程令牌 TokenElevation
 [target.'cfg(unix)'.dependencies]
 libc.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
 
 [lints]
 workspace = true

@@ -11,11 +11,34 @@ pub fn is_elevated() -> bool {
     euid == 0
 }
 
-/// 当前是否以管理员 / root 运行（Windows 令牌检测暂未实现，恒 false）。
+/// 当前是否以管理员运行：查当前进程令牌的 TokenElevation（UAC 提权后为真）。
 #[cfg(windows)]
+#[allow(unsafe_code)] // Win32 FFI：OpenProcessToken / GetTokenInformation
 #[tauri::command]
 pub fn is_elevated() -> bool {
-    false
+    use windows_sys::Win32::Foundation::{CloseHandle, HANDLE};
+    use windows_sys::Win32::Security::{
+        GetTokenInformation, TOKEN_ELEVATION, TOKEN_QUERY, TokenElevation,
+    };
+    use windows_sys::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
+
+    unsafe {
+        let mut token: HANDLE = core::ptr::null_mut();
+        if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token) == 0 {
+            return false;
+        }
+        let mut elevation = TOKEN_ELEVATION { TokenIsElevated: 0 };
+        let mut len = 0u32;
+        let ok = GetTokenInformation(
+            token,
+            TokenElevation,
+            &mut elevation as *mut TOKEN_ELEVATION as *mut core::ffi::c_void,
+            core::mem::size_of::<TOKEN_ELEVATION>() as u32,
+            &mut len,
+        ) != 0;
+        CloseHandle(token);
+        ok && elevation.TokenIsElevated != 0
+    }
 }
 
 /// 以管理员权限重启应用：拉起提权启动器后退出当前实例。

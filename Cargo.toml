@@ -20,6 +20,12 @@ serde_json = "1"
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-build = "2"
 libc = "0.2"
+# Windows 提权检测（TokenElevation）；版本随锁文件中已有的 0.61.x
+windows-sys = { version = "0.61", features = [
+  "Win32_Foundation",
+  "Win32_Security",
+  "Win32_System_Threading",
+] }
 rfd = "0.17"
 base64 = "0.23"
 
