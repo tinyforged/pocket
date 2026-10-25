@@ -16,14 +16,18 @@ export async function installUpdate(
   progress?: (ratio: number | null) => void,
 ): Promise<void> {
   let total = 0;
+  let downloaded = 0;
   await update.downloadAndInstall((event) => {
     switch (event.event) {
       case "Started":
         total = event.data.contentLength ?? 0;
+        downloaded = 0;
         progress?.(total > 0 ? 0 : null);
         break;
       case "Progress":
-        progress?.(total > 0 ? event.data.chunkLength / total : null);
+        // chunkLength 是本次分片大小，需累加才是已下载量
+        downloaded += event.data.chunkLength;
+        progress?.(total > 0 ? Math.min(1, downloaded / total) : null);
         break;
       case "Finished":
         progress?.(1);
