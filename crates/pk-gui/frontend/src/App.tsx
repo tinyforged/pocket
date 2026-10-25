@@ -67,15 +67,20 @@ export default function App() {
   );
   const stats = useMemo(() => summarize(entries), [entries]);
 
-  // "/" 聚焦搜索框
+  // "/" 聚焦搜索框；正在任何输入元素上打字时让位，不抢焦点
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "/" && !e.ctrlKey && !e.metaKey) {
-        const input = document.querySelector<HTMLInputElement>("[data-search]");
-        if (input && document.activeElement !== input) {
-          e.preventDefault();
-          input.focus();
-        }
+      if (e.key !== "/" || e.ctrlKey || e.metaKey) return;
+      const active = document.activeElement;
+      const typing =
+        active instanceof HTMLElement &&
+        (active.isContentEditable ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(active.tagName));
+      if (typing) return;
+      const input = document.querySelector<HTMLInputElement>("[data-search]");
+      if (input && active !== input) {
+        e.preventDefault();
+        input.focus();
       }
     };
     document.addEventListener("keydown", onKey);
