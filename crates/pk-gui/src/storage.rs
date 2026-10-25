@@ -85,26 +85,40 @@ pub fn get_storage_info(app: tauri::AppHandle) -> StorageInfoDto {
 }
 
 /// 数据目录下的可迁移内容（背景图 + 日志）。
+const MIGRATABLE: [&str; 2] = ["background.img", "logs"];
+
+/// 把可迁移内容**复制**到新目录。复制而非移动：全部成功前旧目录保持
+/// 完整，任一步失败都只是"没换成"，绝不丢数据；清理旧目录由调用方在
+/// 切换指针成功之后进行。
 fn migrate(from: &Path, to: &Path) -> Result<(), String> {
-    for name in ["background.img", "logs"] {
+    for name in MIGRATABLE {
         let src = from.join(name);
         if !src.exists() {
             continue;
         }
         let dst = to.join(name);
-        if dst.exists() {
+        if dst.is_dir() {
             std::fs::remove_dir_all(&dst).map_err(|e| format!("清理目标 {name} 失败：{e}"))?;
+        } else if dst.exists() {
+            std::fs::remove_file(&dst).map_err(|e| format!("清理目标 {name} 失败：{e}"))?;
         }
-        if let Err(e) = std::fs::rename(&src, &dst) {
-            // 跨卷 rename 会失败，退回复制 + 删除
-            std::fs::copy(&src, &dst)
-                .map_err(|copy_err| format!("迁移 {name} 失败：rename {e} / copy {copy_err}"))?;
-            if src.is_dir() {
-                std::fs::remove_dir_all(&src).map_err(|e| format!("迁移 {name} 失败：{e}"))?;
-            } else {
-                std::fs::remove_file(&src).map_err(|e| format!("迁移 {name} 失败：{e}"))?;
+        copy_item(&src, &dst).map_err(|e| format!("迁移 {name} 失败：{e}"))?;
+    }
+    Ok(())
+}
+
+/// 单条目复制：文件直接复制；目录按一层展开（日志目录无嵌套，见 dir_size）。
+fn copy_item(src: &Path, dst: &Path) -> std::io::Result<()> {
+    if src.is_dir() {
+        std::fs::create_dir_all(dst)?;
+        for entry in std::fs::read_dir(src)? {
+            let entry = entry?;
+            if entry.file_type()?.is_file() {
+                std::fs::copy(entry.path(), dst.join(entry.file_name()))?;
             }
         }
+    } else {
+        std::fs::copy(src, dst)?;
     }
     Ok(())
 }
@@ -128,17 +142,30 @@ pub async fn change_storage_dir(app: tauri::AppHandle) -> Result<Option<String>,
     }
     let _ = std::fs::create_dir_all(&new_dir);
 
-    // 先写 bootstrap 再迁移：中途失败时下次启动仍指向旧目录不至丢数据
+    // 先复制迁移，全部成功才继续：旧目录全程完整；新目录里复制到一半
+    // 的残留会在下次换目录时被同一段清理逻辑覆盖，无害
+    migrate(&old, &new_dir)?;
+
+    // 迁移成功：写 bootstrap、切换运行时指针，最后才清理旧目录的副本
+    // （清理放在指针切换之后：即使 bootstrap 写入失败，也只是新旧两份
+    // 并存，数据不丢）
     let cfg = json!({ "dir": new_dir.display().to_string() });
     std::fs::write(
         bootstrap_path(&app),
         serde_json::to_vec(&cfg).map_err(|e| e.to_string())?,
     )
     .map_err(|e| format!("写入目录配置失败：{e}"))?;
-
-    migrate(&old, &new_dir)?;
     *data_dir().write().expect("数据目录锁中毒") = new_dir.clone();
     logging::set_dir(new_dir.join("logs"));
+    for name in MIGRATABLE {
+        let p = old.join(name);
+        // 尽力清理：失败只留孤儿文件，不影响正确性
+        if p.is_dir() {
+            let _ = std::fs::remove_dir_all(&p);
+        } else if p.exists() {
+            let _ = std::fs::remove_file(&p);
+        }
+    }
     logging::info(format!(
         "数据目录已更改：{} → {}",
         old.display(),
@@ -146,4 +173,58 @@ pub async fn change_storage_dir(app: tauri::AppHandle) -> Result<Option<String>,
     ));
 
     Ok(Some(new_dir.display().to_string()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::migrate;
+    use std::fs;
+    use std::path::PathBuf;
+
+    /// 每个用例独立的临时目录（用例名 + 进程号隔离，并行不串）。
+    fn scratch(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("pk-storage-{tag}-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&dir);
+        fs::create_dir_all(dir.join("old")).unwrap();
+        fs::create_dir_all(dir.join("new")).unwrap();
+        dir
+    }
+
+    /// 复制语义：目标齐全，源原封不动——失败可回退的前提。
+    #[test]
+    fn migrate_copies_without_touching_source() {
+        let base = scratch("copy");
+        let (old, new) = (base.join("old"), base.join("new"));
+        fs::create_dir_all(old.join("logs")).unwrap();
+        fs::write(old.join("background.img"), b"img").unwrap();
+        fs::write(old.join("logs/pk.log"), b"log").unwrap();
+        fs::write(old.join("logs/pk.log.1"), b"log1").unwrap();
+
+        migrate(&old, &new).expect("迁移应成功");
+
+        assert_eq!(fs::read(new.join("background.img")).unwrap(), b"img");
+        assert_eq!(fs::read(new.join("logs/pk.log")).unwrap(), b"log");
+        assert_eq!(fs::read(new.join("logs/pk.log.1")).unwrap(), b"log1");
+        assert!(old.join("background.img").exists());
+        assert!(old.join("logs/pk.log").exists());
+
+        fs::remove_dir_all(&base).ok();
+    }
+
+    /// 旧目录缺项直接跳过；目标已有同名项时被覆盖。
+    #[test]
+    fn migrate_skips_missing_and_overwrites_existing() {
+        let base = scratch("skip");
+        let (old, new) = (base.join("old"), base.join("new"));
+        fs::write(new.join("background.img"), b"stale").unwrap();
+
+        migrate(&old, &new).expect("旧目录为空应迁移成功");
+        assert!(!new.join("logs").exists());
+
+        fs::write(old.join("background.img"), b"fresh").unwrap();
+        migrate(&old, &new).expect("覆盖迁移应成功");
+        assert_eq!(fs::read(new.join("background.img")).unwrap(), b"fresh");
+
+        fs::remove_dir_all(&base).ok();
+    }
 }
