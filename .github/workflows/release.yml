@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.95.0
         with:
           components: rustfmt, clippy
       - uses: Swatinem/rust-cache@v2
@@ -83,7 +83,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: crates/pk-gui/frontend/pnpm-lock.yaml
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.95.0
       # universal 打包需要双架构 target；显式 rustup 安装，避免依赖 action 入参行为
       - name: 安装 macOS 双架构 target
         if: matrix.platform == 'macos-latest'
