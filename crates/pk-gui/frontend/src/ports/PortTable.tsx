@@ -283,8 +283,14 @@ function GroupCard({
 }) {
   const invisible = group.members.filter((m) => !m.process).length;
   const mem = group.processes.reduce((s, p) => s + p.memory, 0);
+  // 真复用（SO_REUSEPORT / fork 共享）：不同进程绑同一地址；
+  // 分别绑不同地址（如 127.0.0.1 与外网 IP）不是复用，不能乱标
+  const reusePort =
+    new Set(
+      group.members.filter((m) => m.process).map((m) => m.localAddr),
+    ).size === 1;
   const meta = [
-    "SO_REUSEPORT",
+    reusePort ? "SO_REUSEPORT" : null,
     mem > 0 ? `合计 ${fmtBytes(mem)}` : null,
     invisible > 0 ? `+${invisible} 条不可见` : null,
   ].filter(Boolean) as string[];
