@@ -14,9 +14,10 @@ export default function ScanTime({ at }: { at: number | null }) {
   const [, tick] = useState(0);
 
   useEffect(() => {
+    if (at == null) return; // 无时间戳时整页组件为空，定时器不必空转
     const t = setInterval(() => tick((n) => n + 1), 1000);
     return () => clearInterval(t);
-  }, []);
+  }, [at]);
 
   if (at == null) return null;
   const s = Math.max(0, Math.round((Date.now() - at) / 1000));
