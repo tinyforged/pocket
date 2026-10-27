@@ -11,6 +11,8 @@ import ElevationBanner from "@/elevation/ElevationBanner";
 import RelaunchDialog from "@/elevation/RelaunchDialog";
 import { useElevation } from "@/elevation/useElevation";
 import LogDialog from "@/logging/LogDialog";
+import type { TabKey } from "@/settings/SettingsDialog";
+import { useTrayMenu } from "@/tray/useTrayMenu";
 import KillDialog from "@/ports/KillDialog";
 import { useKill } from "@/ports/kill";
 import ListSkeleton from "@/ports/ListSkeleton";
@@ -37,7 +39,10 @@ export default function App() {
   const [listeningOnly, setListeningOnly] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<TabKey | null>(null);
   const [logOpen, setLogOpen] = useState(false);
+  /** 托盘"速查端口"触发聚焦搜索框的信号（0 = 未触发过）。 */
+  const [searchFocusTick, setSearchFocusTick] = useState(0);
   const [elevConfirmOpen, setElevConfirmOpen] = useState(false);
   /** 速查（首页）= 搜索优先；列表 = 浏览全部。记忆上次选择 */
   const [mode, setMode] = useState<ViewMode>(readMode);
@@ -46,10 +51,36 @@ export default function App() {
     localStorage.setItem(MODE_KEY, mode);
   }, [mode]);
 
+  // 托盘速查触发时聚焦搜索框（速查首页与列表页共用 data-search 标记）
+  useEffect(() => {
+    if (searchFocusTick === 0) return;
+    document.querySelector<HTMLInputElement>("[data-search]")?.focus();
+  }, [searchFocusTick]);
+
   const { entries, refreshing, refresh, loaded, lastScanAt } = usePortScan();
   const kill = useKill(refresh);
   const elevated = useElevation();
   const { bgUrl, reloadBg } = useAppearanceSync();
+
+  /** 打开设置；可指定落点分区（托盘"检查更新"直达"关于"）。 */
+  const openSettings = (tab: TabKey | null = null) => {
+    setSettingsTab(tab);
+    setSettingsOpen(true);
+  };
+
+  // 托盘菜单入口（窗口由 Rust 侧先行显示 / 聚焦）
+  useTrayMenu({
+    // 速查：切到速查模式并聚焦搜索框。切模式时 QueryLanding 重新挂载、
+    // 自带 autoFocus；已在速查模式时由下方 effect 兜住聚焦。
+    lookup: () => {
+      setMode("query");
+      setSearchFocusTick((n) => n + 1);
+    },
+    scan: () => void refresh(),
+    settings: () => openSettings(),
+    logs: () => setLogOpen(true),
+    update: () => openSettings("about"),
+  });
 
   const searchEntries = useMemo(
     () => filterEntries(entries, keyword),
@@ -109,7 +140,7 @@ export default function App() {
         totalCount={entries.length}
         onRefresh={() => void refresh()}
         refreshing={refreshing}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={() => openSettings()}
       />
 
       {!elevated && (
@@ -228,6 +259,7 @@ export default function App() {
       <SettingsDialog
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
+        initialTab={settingsTab}
         bgSet={bgUrl !== null}
         onBgChanged={reloadBg}
         onOpenLogs={() => setLogOpen(true)}

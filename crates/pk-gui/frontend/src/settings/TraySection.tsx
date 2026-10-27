@@ -14,7 +14,7 @@ export default function TraySection() {
         <div>
           <Label>显示系统托盘 / 菜单栏图标</Label>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            macOS 为菜单栏图标；左键点图标可重新显示窗口
+            macOS 为菜单栏图标，左键弹出功能菜单；Windows / Linux 左键显示窗口，菜单在右键
           </p>
         </div>
         <Switch

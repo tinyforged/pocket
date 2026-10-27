@@ -6,7 +6,7 @@ import {
   ScrollText,
   SlidersHorizontal,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { clearBackgroundImage } from "@/api/appearance";
@@ -31,9 +31,13 @@ const TABS = [
 
 type TabKey = (typeof TABS)[number]["key"];
 
+export type { TabKey };
+
 interface SettingsDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** 打开时落点的分区（如托盘"检查更新"直达"关于"）；null = 记住上次 */
+  initialTab?: TabKey | null;
   /** 是否已设置背景图（控制背景参数区的可用状态） */
   bgSet: boolean;
   /** 选择 / 移除背景图后通知上层重新读取 */
@@ -49,6 +53,7 @@ interface SettingsDialogProps {
 export default function SettingsDialog({
   open,
   onOpenChange,
+  initialTab = null,
   bgSet,
   onBgChanged,
   onOpenLogs,
@@ -56,6 +61,11 @@ export default function SettingsDialog({
   const [tab, setTab] = useState<TabKey>("appearance");
   const { update } = useSettings();
   const { setPreference } = useTheme();
+
+  // 指定了落点分区时在打开瞬间切换；不指定则保持上次浏览的分区
+  useEffect(() => {
+    if (open && initialTab) setTab(initialTab);
+  }, [open, initialTab]);
 
   /** 恢复默认：设置与主题全部复位，并删除背景图。 */
   const resetAll = async () => {
