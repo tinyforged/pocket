@@ -1,4 +1,4 @@
-import { FileDown, Trash2 } from "lucide-react";
+import { Check, Copy, FileDown, Trash2 } from "lucide-react";
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import {
   writeFrontendLog,
 } from "@/api/logging";
 import type { LogEntryDto } from "@/api/types";
+import { copyText } from "@/lib/clipboard";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -33,6 +34,10 @@ const FILTER_MATCH: Record<Filter, (l: LogEntryDto["level"]) => boolean> = {
 const logKey = (entry: LogEntryDto) =>
   `${entry.time}\0${entry.level}\0${entry.message}`;
 
+/** 与屏幕所见一致的单行文本（级别补齐到 5 字符对齐）。 */
+const formatLine = (l: LogEntryDto) =>
+  `${l.time} [${l.level.toUpperCase().padEnd(5)}] ${l.message}`;
+
 interface LogDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -43,6 +48,7 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
   const [logs, setLogs] = useState<LogEntryDto[]>([]);
   const [filter, setFilter] = useState<Filter>("全部");
   const [follow, setFollow] = useState(true);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   // 打开时取存量 + 订阅实时事件
@@ -130,6 +136,28 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
     }
   };
 
+  // 复制当前筛选下的可见日志（与"导出"分工：复制跟筛选、限内存缓冲；导出走完整落盘历史）。
+  // 纯瞬时 UI 操作，不写应用日志，toast 反馈即可。
+  const copyAll = async () => {
+    if (visible.length === 0) return;
+    if (await copyText(visible.map(formatLine).join("\n"))) {
+      toast.success(`已复制 ${visible.length} 条日志`);
+    } else {
+      toast.error("复制失败");
+    }
+  };
+
+  // 单行复制：就地 ✓ 反馈，不弹 toast（连续复制时不吵）
+  const copyOne = async (l: LogEntryDto) => {
+    if (!(await copyText(formatLine(l)))) {
+      toast.error("复制失败");
+      return;
+    }
+    const key = logKey(l);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 1000);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex h-140 max-h-[80vh] max-w-3xl flex-col gap-0 overflow-hidden p-0">
@@ -142,6 +170,15 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
           </div>
           {/* 右上角留给弹窗自带的关闭按钮 */}
           <div className="mr-10 flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              disabled={visible.length === 0}
+              onClick={() => void copyAll()}
+            >
+              <Copy className="size-3.5" />
+              复制
+            </Button>
             <Button size="sm" variant="outline" onClick={() => void exportAll()}>
               <FileDown className="size-3.5" />
               导出…
@@ -189,7 +226,7 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
             </p>
           ) : (
             visible.map((l, i) => (
-              <div key={i} className="flex gap-2">
+              <div key={i} className="group relative flex gap-2">
                 <span className="shrink-0 text-muted-foreground">{l.time}</span>
                 <span className={`shrink-0 ${LEVEL_STYLE[l.level]}`}>
                   [{l.level.toUpperCase().padEnd(5)}]
@@ -197,6 +234,18 @@ export default function LogDialog({ open, onOpenChange }: LogDialogProps) {
                 <span className="break-all whitespace-pre-wrap text-foreground/90">
                   {l.message}
                 </span>
+                <button
+                  type="button"
+                  title="复制此行"
+                  onClick={() => void copyOne(l)}
+                  className="absolute right-0 top-0 rounded-sm bg-muted/90 p-0.5 text-muted-foreground opacity-0 transition-opacity hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+                >
+                  {copiedKey === logKey(l) ? (
+                    <Check className="size-3" />
+                  ) : (
+                    <Copy className="size-3" />
+                  )}
+                </button>
               </div>
             ))
           )}
